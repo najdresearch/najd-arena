@@ -1,0 +1,7 @@
+services:
+  arena:
+    build: .
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+

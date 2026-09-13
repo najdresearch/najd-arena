@@ -1,0 +1,8 @@
+{
+  "schema_version": "1",
+  "id": "najd-arena-acceptance",
+  "version": "1.0.0",
+  "license": "CC0-1.0",
+  "cases_file": "cases.jsonl"
+}
+

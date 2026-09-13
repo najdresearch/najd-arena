@@ -1,0 +1,9 @@
+{
+  "id": "acceptance-recorded",
+  "suite": ".",
+  "provider": "recorded-demo",
+  "max_attempts": 2,
+  "temperature": 0.0,
+  "max_tokens": 256
+}
+

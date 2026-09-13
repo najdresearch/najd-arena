@@ -1,0 +1,13 @@
+{
+  "ar-exact-001": "الرياض",
+  "ar-exact-002": "نعم",
+  "ar-exact-003": "2",
+  "en-exact-001": "READY",
+  "json-001": {"status": "ready"},
+  "json-002": {"count": 3},
+  "rag-001": {"text": "The command is najd-arena.", "citations": ["s1"]},
+  "rag-002": {"text": "يقع المختبر في الرياض.", "citations": ["s2"]},
+  "tool-001": {"arguments": {"city": "Riyadh"}, "name": "weather"},
+  "tool-002": {"arguments": {"city": "الرياض"}, "name": "time"}
+}
+

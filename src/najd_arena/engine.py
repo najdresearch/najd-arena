@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import platform
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -47,11 +48,17 @@ def create_run(project_root: Path, experiment_path: Path) -> str:
     if experiment.provider not in providers:
         raise ValueError(f"provider {experiment.provider!r} is not configured")
     provider_config = providers[experiment.provider]
+    lockfile = project_root / "uv.lock"
     resolved = {
         "schema_version": "1",
         "experiment": experiment.__dict__,
-        "suite": {"id": suite.id, "version": suite.version, "license": suite.license},
-        "cases_digest": file_digest(suite.root / "cases.jsonl"),
+        "suite": {
+            "id": suite.id,
+            "version": suite.version,
+            "license": suite.license,
+            "cases_file": suite.cases_file,
+        },
+        "cases_digest": file_digest(suite.root / suite.cases_file),
         "provider": {
             "name": provider_config.name,
             "plugin": provider_config.plugin,
@@ -61,6 +68,12 @@ def create_run(project_root: Path, experiment_path: Path) -> str:
             "responses_file": provider_config.responses_file,
         },
         "code_revision": _git_revision(project_root),
+        "environment": {
+            "python": platform.python_version(),
+            "platform": platform.platform(),
+            "lockfile": "uv.lock" if lockfile.is_file() else None,
+            "lockfile_sha256": file_digest(lockfile) if lockfile.is_file() else None,
+        },
         "experiment_path": str(experiment_path.relative_to(project_root)),
     }
     run_id = f"{experiment.id}-{digest(resolved)[:12]}"

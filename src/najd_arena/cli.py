@@ -7,6 +7,7 @@ from pathlib import Path
 from .canonical import read_json, write_json
 from .engine import create_run, execute_run, grade_run, report_run, validate_dataset
 from .evidence import export_evidence, verify_evidence
+from .publication import prepare_dataset, prepare_run, publish_release
 
 
 def _root() -> Path:
@@ -47,6 +48,19 @@ def main() -> None:
     export.add_argument("--output", type=Path, required=True)
     verify = commands.add_parser("verify")
     verify.add_argument("bundle", type=Path)
+    release = commands.add_parser("release")
+    release_commands = release.add_subparsers(dest="release_command", required=True)
+    prepare_dataset_command = release_commands.add_parser("prepare-dataset")
+    prepare_dataset_command.add_argument("suite", type=Path)
+    prepare_dataset_command.add_argument("--approval", type=Path, required=True)
+    prepare_dataset_command.add_argument("--output", type=Path, required=True)
+    prepare_run_command = release_commands.add_parser("prepare-run")
+    prepare_run_command.add_argument("run_id")
+    prepare_run_command.add_argument("--approval", type=Path, required=True)
+    prepare_run_command.add_argument("--dataset-revision", required=True)
+    prepare_run_command.add_argument("--output", type=Path, required=True)
+    publish = release_commands.add_parser("publish")
+    publish.add_argument("staging", type=Path)
     args = parser.parse_args()
     root = _root()
 
@@ -92,6 +106,24 @@ def main() -> None:
         print(export_evidence(run_dir, args.output.resolve()))
     elif args.command == "verify":
         print(json.dumps(verify_evidence(args.bundle.resolve()), ensure_ascii=False))
+    elif args.command == "release" and args.release_command == "prepare-dataset":
+        print(
+            prepare_dataset(
+                root, args.suite.resolve(), args.approval.resolve(), args.output.resolve()
+            )
+        )
+    elif args.command == "release" and args.release_command == "prepare-run":
+        print(
+            prepare_run(
+                root,
+                args.run_id,
+                args.approval.resolve(),
+                args.dataset_revision,
+                args.output.resolve(),
+            )
+        )
+    elif args.command == "release" and args.release_command == "publish":
+        print(json.dumps(publish_release(args.staging.resolve()), ensure_ascii=False))
 
 
 if __name__ == "__main__":

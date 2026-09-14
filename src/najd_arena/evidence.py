@@ -8,6 +8,13 @@ from typing import Any
 from .canonical import file_digest, read_json, write_json
 
 
+def _write_member(archive: zipfile.ZipFile, name: str, content: bytes) -> None:
+    info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.external_attr = 0o644 << 16
+    archive.writestr(info, content)
+
+
 def export_evidence(run_dir: Path, output: Path) -> Path:
     required = ["manifest.json", "attempts.jsonl", "grades.jsonl", "report.json"]
     missing = [name for name in required if not (run_dir / name).exists()]
@@ -22,10 +29,10 @@ def export_evidence(run_dir: Path, output: Path) -> Path:
         manifest_path = Path(temporary) / "evidence-manifest.json"
         write_json(manifest_path, manifest)
         output.parent.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-            archive.write(manifest_path, "evidence-manifest.json")
+        with zipfile.ZipFile(output, "w") as archive:
+            _write_member(archive, "evidence-manifest.json", manifest_path.read_bytes())
             for name in required:
-                archive.write(run_dir / name, name)
+                _write_member(archive, name, (run_dir / name).read_bytes())
     return output
 
 

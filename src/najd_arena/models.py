@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, FormatChecker
 
 from .canonical import read_json
 
@@ -33,6 +33,7 @@ class Suite:
     id: str
     version: str
     license: str
+    cases_file: str
     root: Path
     cases: tuple[Case, ...]
 
@@ -74,7 +75,7 @@ def _schema_root() -> Path:
 
 def validate_document(value: dict[str, Any], schema_name: str) -> None:
     schema = read_json(_schema_root() / schema_name)
-    Draft202012Validator(schema).validate(value)
+    Draft202012Validator(schema, format_checker=FormatChecker()).validate(value)
 
 
 def load_suite(path: Path) -> Suite:
@@ -96,7 +97,14 @@ def load_suite(path: Path) -> Suite:
         cases.append(case)
     if not cases:
         raise ValueError("suite contains no cases")
-    return Suite(manifest["id"], manifest["version"], manifest["license"], path, tuple(cases))
+    return Suite(
+        manifest["id"],
+        manifest["version"],
+        manifest["license"],
+        manifest["cases_file"],
+        path,
+        tuple(cases),
+    )
 
 
 def load_experiment(path: Path) -> Experiment:

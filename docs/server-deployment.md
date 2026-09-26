@@ -1,0 +1,75 @@
+# Arena server deployment
+
+The active deployment uses CranL for Next.js and PostgreSQL. The target domain is `najdarena.com`. This is a Node.js deployment, not a static export. The Compose instructions below are an alternative self-hosted setup; the current CranL deployment is recorded at the end.
+
+## Before deployment
+
+Check the reachable server's operating system, free disk and memory, Docker version, existing containers, and listeners on ports 80/443. Reuse its existing reverse proxy if present; do not replace another site's listener with Caddy.
+
+Copy `infra/production.env.example` to `infra/production.env` with mode `600`. Generate unique secrets, set the database password in both `POSTGRES_PASSWORD` and `DATABASE_URL`, and set `AUTH_URL=https://najdarena.com`. Use a hex database password to avoid URL escaping mistakes. The secret file is excluded from Git and Docker build context.
+
+GitHub and Hugging Face login require production OAuth client credentials. Their callback paths are `/api/auth/callback/github` and `/api/auth/callback/huggingface`. Organization run submission additionally requires the evaluation workers, object storage, judge configuration, and organization quota approval. The initial production Compose file does not enable evaluation workers; do not approve run quotas until those services are configured and verified.
+
+## Launch
+
+Run from the repository root after populating `infra/production.env`:
+
+```sh
+docker compose --env-file infra/production.env -f infra/docker-compose.production.yml up -d --build
+```
+
+Migrations run before the application starts. Caddy waits for `/api/health` to confirm database connectivity. PostgreSQL is reachable only on server loopback port 55432; Redis has no published port.
+
+## Import the historical study
+
+Keep the raw snapshot on the original machine. Forward a local port to the production database with SSH, then run `tui/scripts/seed_historical_m3.py` locally using that tunnel and the production database password. The importer sends only grade records and metadata. Never copy the original evidence files into the web image or public assets.
+
+Verify 170,492 imported grade rows, 6,089 distinct case IDs, 28 configurations, and headline rates of 65.93% and 64.48%. Check the historical-content disclosure is rendered beside the results.
+
+## DNS
+
+After registration and confirmation of the reachable server's public address:
+
+| Type | Name | Value |
+| --- | --- | --- |
+| A | `@` | Verified server IPv4 address |
+| CNAME | `www` | `najdarena.com` (optional; add a matching redirect host to Caddy) |
+
+Start with DNS-only records while verifying Caddy certificate issuance. Do not add an AAAA record unless the server has working public IPv6. Confirm the live HTTPS app and the historical study before declaring deployment complete.
+
+## Evidence and rollback
+
+Record the deployed commit or image digest, successful migrations, health response, and HTTPS checks. Back up PostgreSQL before subsequent migrations. Roll back the application image independently; do not automatically reverse or delete database migrations. Persist the PostgreSQL and Caddy volumes across deployments.
+
+## Cranl handoff — September 26
+
+- Target domain: `najdarena.com`, purchased and managed in Cloudflare.
+- Repository: `najdresearch/najd-arena`, branch `main`.
+- Use root Dockerfile, port 3000; persistent PostgreSQL already exists in Cranl as `najd-arena-db` under the Najd Arena project.
+- Set `DATABASE_URL` to its application connection string, `AUTH_URL=https://najdarena.com`, `AUTH_TRUST_HOST=true`, and a generated `AUTH_SECRET` in Cranl secret environment configuration.
+- First launch: `ARENA_SEED_HISTORICAL=true` runs the verified seed and database catalog import. Verify 28 configurations and 170,492 total outputs; then turn the flag off.
+- Public model metadata and metrics are now database-backed. See `database-result-catalog.md` for visibility and Evaluation as a Service milestones.
+- GitHub integration repaired by reinstalling CranL with access only to `najdresearch/najd-arena`.
+- Application ID: `03654404-e4e0-4526-8d4f-9432faf62c42`; region Saudi-6 (Riyadh), matching PostgreSQL.
+- Default URL: https://najd-arena-sf9p1r.cranl.net/
+- Deployed code: `fd96d8cc1d6968ae53b06eca7d15f76e2affd045`.
+- Custom domain live: https://najdarena.com/. Cloudflare apex CNAME saved with DNS-only routing; CranL reports SSL Active. HTTPS `/api/health` returns HTTP 200, and the browser renders database-backed model results.
+- Required Cloudflare record: CNAME, name `@`, target `najd-arena-sf9p1r.cranl.net`, DNS only initially. Cloudflare flattens the apex CNAME. Do not use `najdarena` as the record name; that would create a subdomain.
+- Initial container failed because the copied database connection string omitted its password. Reconstructed the internal URL using the existing database credential, saved it in CranL, and redeployed. Do not record credentials here.
+- Verified HTTPS `/api/health` returned HTTP 200 with `{"status":"ok"}`. Homepage and Models, both model profiles, Inference, Coding Agents, Image, About, and Leaderboards returned HTTP 200. Homepage contains HUMAIN M3 67.35% and MiniMax M3 66.12% for the default raw setting.
+- Initial import flag has been disabled after successful import; application reloaded.
+- Production login providers and evaluation workers are not configured yet. Do not enable organization run quotas until those integrations are verified.
+- Chrome blocked the temporary CranL hostname with `ERR_BLOCKED_BY_CLIENT`; no browser protection was bypassed. HTTP verification succeeded independently. Custom-domain browser verification succeeded at https://najdarena.com/ after Cloudflare DNS setup.
+
+
+## Continuous deployment from main
+
+GitHub Actions runs Python lint/tests, web lint/tests/build, and both container builds. Only a successful push pipeline on `main` can run the production deployment job. It uses the documented CranL deployment API and checks the completed build and public database health. The `production` environment must contain the `CRANL_API_KEY` secret; never place it in the repository.
+
+CranL source settings must use `main`, build path `/`, root Dockerfile, port 3000. The native GitHub webhook currently returns `401 Invalid signature`; the API workflow avoids depending on that broken integration. Key creation and secure storage are pending owner approval at the time of this change. The API key has account-level permissions because CranL does not expose an application-only scope in its creation form.
+
+References: [CranL deployment API](https://docs.cranl.com/api/applications.html), [API authentication](https://docs.cranl.com/api/authentication.html).
+
+## Mobile verification
+
+The public pages were checked at 320px with no document-wide horizontal overflow. The mobile navigation opens all categories and closes after navigation or Escape. Comparison controls use touch-sized targets; wide tables scroll inside labeled, keyboard-focusable regions. The model charts were also checked at 390px and desktop width. Mobile overrides are centralized in `web/app/responsive.css`.

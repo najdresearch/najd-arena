@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://najdresearch.com/schemas/arena/run-v1.json",
+  "title": "Najd Arena run summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "status", "canonical", "dataset", "target", "scores"],
+  "properties": {
+    "schema_version": {"const": "1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["queued", "validating_endpoint", "running_inference", "grading", "aggregating", "awaiting_review", "published", "rejected", "needs_credentials", "failed", "cancelled"]},
+    "canonical": {"type": "boolean"},
+    "dataset": {
+      "type": "object",
+      "required": ["id", "version", "revision", "cases_sha256"],
+      "properties": {
+        "id": {"type": "string"}, "version": {"type": "string"},
+        "revision": {"type": "string"}, "cases_sha256": {"type": "string"}
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": ["display_name", "model_id", "identity_status"],
+      "properties": {
+        "display_name": {"type": "string"}, "model_id": {"type": "string"},
+        "returned_model_id": {"type": ["string", "null"]},
+        "identity_status": {"const": "organization_verified"}
+      }
+    },
+    "scores": {
+      "type": "object",
+      "required": ["najd_score", "case_weighted_score", "coverage", "tracks"],
+      "properties": {
+        "najd_score": {"type": ["number", "null"]},
+        "case_weighted_score": {"type": ["number", "null"]},
+        "coverage": {"type": "number"},
+        "tracks": {"type": "object", "additionalProperties": {"type": "number"}}
+      }
+    },
+    "judge_profile_id": {"type": ["string", "null"]},
+    "published_at": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

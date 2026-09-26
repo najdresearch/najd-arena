@@ -9,26 +9,70 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  tui:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
-      - run: uv sync --extra dev --frozen
+      - run: uv sync --extra dev --extra worker --frozen
+        working-directory: tui
       - run: uv run ruff check .
-      - run: uv run pytest -q
+        working-directory: tui
+      - run: uv run python -m pytest -q
+        working-directory: tui
       - run: uv build
+        working-directory: tui
       - name: Reject committed secrets and oversized files
         run: |
           ! git grep -En 'sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY'
-          test -z "$(find . -type f -not -path './.git/*' -not -path './.venv/*' -size +10M -print -quit)"
+          python -c "import pathlib, subprocess; paths=subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0'); large=[p for p in paths if p and pathlib.Path(p).stat().st_size > 10*1024*1024]; assert not large, large"
 
-  docker:
+  web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - run: docker compose build
-      - run: docker compose run --rm arena dataset validate examples/acceptance
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir web lint
+      - run: pnpm --dir web test
+      - run: pnpm --dir web build
 
+  containers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: docker compose -f infra/docker-compose.yml config --quiet
+      - run: docker build -f infra/Dockerfile.web .
+      - run: docker build -f infra/Dockerfile.worker .
+
+  deploy:
+    name: Deploy to CranL
+    needs: [tui, web, containers]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: cranl-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+      - name: Deploy verified main branch
+        env:
+          CRANL_API_KEY: ${{ secrets.CRANL_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test -n "$CRANL_API_KEY" || { echo 'Configure the production CRANL_API_KEY secret'; exit 1; }
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [ "$latest" != "$GITHUB_SHA" ]; then
+            echo 'A newer main commit exists; its CI run will deploy it.'
+            exit 0
+          fi
+          python scripts/deploy_cranl.py

@@ -1,0 +1,11 @@
+import Link from "next/link";
+import {ProviderLogo} from "@/components/ProviderLogo";
+import { notFound } from "next/navigation";
+import { publicEvaluation } from "@/lib/db";
+import { ModelProfile } from "@/components/ModelProfile";
+export const dynamic="force-dynamic";
+export async function generateMetadata({params}:{params:Promise<{slug:string}>}){const {slug}=await params;const study=await publicEvaluation();const model=study?.catalog.find(m=>m.slug===slug);return {title:model?.displayName??"Model not found",alternates:{canonical:`/models/${slug}`}};}
+export default async function ModelPage({params}:{params:Promise<{slug:string}>}) {
+ const {slug}=await params;const study=await publicEvaluation();const model=study?.catalog.find(m=>m.slug===slug);if(!model)notFound();
+ return <main className="shell model-profile"><div className="page-topline"><Link href={{pathname:"/models"}}>Models</Link><span>{model.displayName}</span></div><section className="overview-heading"><div className="eyebrow">Arabic & Saudi performance · Text evaluation</div><ProviderLogo model={model.id} size={56}/><h1>{model.displayName}</h1><p>Capability scores, comparable configurations, and the evidence behind each result.</p></section>{study?<><ModelProfile study={study} model={model.id}/><section className="profile-section"><h2>Technical specifications</h2><p className="lede">Evaluation metadata is reported separately from provider specifications.</p><div className="table-scroll"><table className="results-table"><tbody>{Object.entries(model.specifications).map(([key,value])=><tr key={key}><th>{key}</th><td>{value}</td></tr>)}<tr><th>Evaluated input / output</th><td>Text / text</td></tr><tr><th>Recorded reasoning settings</th><td>disabled, default, minimal, low, medium, high, xhigh</td></tr><tr><th>Recorded prompt settings</th><td>Direct model execution (raw). Pi harness results appear under Coding Agents.</td></tr><tr><th>Context window, parameters, release date</th><td>Not verified for this imported model identifier</td></tr><tr><th>API cost and speed</th><td>Not measured</td></tr></tbody></table></div></section></>:<div className="empty">Model results are temporarily unavailable.</div>}</main>;
+}

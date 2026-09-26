@@ -1,0 +1,9 @@
+FROM python:3.13-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir uv
+COPY tui/pyproject.toml tui/uv.lock tui/README.md ./
+COPY tui/src ./src
+RUN uv sync --extra worker --frozen --no-dev
+ENV PATH="/app/.venv/bin:$PATH"
+CMD ["najd-arena-worker"]

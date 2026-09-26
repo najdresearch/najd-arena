@@ -1,0 +1,4 @@
+[
+ {"id":"humain","slug":"humain-m3","displayName":"HUMAIN M3","providerName":"HUMAIN","logoUrl":"/providers/humain.png","color":"#237757"},
+ {"id":"minimax","slug":"minimax-m3","displayName":"MiniMax M3","providerName":"MiniMax","logoUrl":"/providers/minimax.ico","color":"#8792c7"}
+]

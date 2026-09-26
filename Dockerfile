@@ -1,5 +1,24 @@
-FROM python:3.13-slim@sha256:9d2e5553305c7c7b0097999bb17187c69b921ccd6bc9d40e4bb5ebe652c00285
-WORKDIR /workspace
-COPY . /workspace
-RUN pip install --no-cache-dir .
-ENTRYPOINT ["najd-arena"]
+# Cranl requires a root Dockerfile. Keep aligned with infra/Dockerfile.web.
+FROM node:24-alpine AS build
+WORKDIR /app
+RUN corepack enable
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY web/package.json web/package.json
+RUN pnpm install --frozen-lockfile
+COPY web web
+RUN pnpm --dir web build
+# Next traces pg files but omits the package link needed by the migration runner.
+RUN ln -s "$(readlink web/node_modules/pg)" web/.next/standalone/web/node_modules/pg
+
+FROM node:24-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+COPY --from=build --chown=node:node /app/web/.next/standalone ./
+COPY --from=build --chown=node:node /app/web/.next/static ./web/.next/static
+COPY --from=build --chown=node:node /app/web/public ./web/public
+COPY --from=build --chown=node:node /app/web/db ./web/db
+USER node
+EXPOSE 3000
+CMD ["sh", "-c", "node web/db/migrate.mjs && exec node web/server.js"]

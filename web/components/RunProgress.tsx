@@ -5,6 +5,8 @@ import type { PrivateRun } from "@/lib/types";
 
 export function RunProgress({ initial }: { initial: PrivateRun }) {
   const [run, setRun] = useState(initial);
+  const [message, setMessage] = useState("");
+  const [cancelling, setCancelling] = useState(false);
   useEffect(() => {
     if (["published", "rejected", "cancelled", "failed", "awaiting_review"].includes(run.status)) return;
     const timer = window.setInterval(async () => {
@@ -18,13 +20,25 @@ export function RunProgress({ initial }: { initial: PrivateRun }) {
   }, [run.id, run.status]);
   const progress = run.totalCases ? run.completedCases / run.totalCases * 100 : 0;
   async function cancel() {
-    await fetch(`/api/runs/${run.id}/cancel`, { method: "POST" });
-    setRun(current => ({ ...current, status: "cancelled" }));
+    setCancelling(true);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/runs/${run.id}/cancel`, { method: "POST" });
+      if (!response.ok) { setMessage("Cancellation was not accepted. Refresh to check the current run status."); return; }
+      setRun(current => ({ ...current, status: "cancelled" }));
+    } catch { setMessage("Could not reach the server. The run may still be active."); }
+    finally { setCancelling(false); }
+  }
+  async function requestPublication(){
+    const response=await fetch(`/api/runs/${run.id}/publication`,{method:"POST"});
+    if(response.ok){setRun(current=>({...current,publicationRequested:true}));setMessage("Publication requested. This evaluation remains private until Najd approval.");}
+    else setMessage("Publication request was not accepted. Your result remains private.");
   }
   return <div className="run-row"><div><strong>{run.modelName}</strong>
     <div className="meta">{run.status} · {run.completedCases.toLocaleString()} / {run.totalCases.toLocaleString()} cases · {run.errors} errors</div>
     <div className="progress-track" aria-label={`${progress.toFixed(0)}% complete`}><div className="progress-fill" style={{width: `${progress}%`}} /></div>
     {! ["published", "rejected", "cancelled", "failed", "awaiting_review"].includes(run.status) &&
-      <button className="chip" type="button" onClick={cancel} style={{marginTop: ".75rem"}}>Cancel</button>}
-  </div><div className="score">{run.score ? (run.score * 100).toFixed(1) : "—"}</div></div>;
+      <button className="chip" type="button" onClick={cancel} disabled={cancelling} style={{marginTop: ".75rem"}}>{cancelling ? "Cancelling…" : "Cancel"}</button>}
+  {run.status==="awaiting_review"&&run.canRequestPublication&&!run.publicationRequested&&<button className="chip" onClick={requestPublication}>Request public publication</button>}
+  {message && <p role="status" className="notice">{message}</p>}</div><div className="score">{run.score ? (run.score * 100).toFixed(1) : "—"}</div></div>;
 }

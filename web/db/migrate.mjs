@@ -2,6 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
+import { seedCatalog } from "./seed-catalog.mjs";
 import { seedHistorical } from "./seed-historical.mjs";
 
 async function main() {
@@ -24,7 +25,7 @@ async function main() {
         throw error;
       }
     }
-    if (process.env.ARENA_SEED_HISTORICAL === "true") await seedHistorical(client);
+    if (process.env.ARENA_SEED_HISTORICAL === "true") { await seedHistorical(client); await seedCatalog(client); }
   } finally {
     await client.query("SELECT pg_advisory_unlock(736241890)");
     client.release();

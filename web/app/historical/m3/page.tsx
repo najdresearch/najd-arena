@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { historicalM3Experiment } from "@/lib/db";
+import { publicEvaluation } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -12,17 +12,17 @@ function rate(acceptable: number, total: number) {
 }
 
 export default async function HistoricalM3Page() {
-  const study = await historicalM3Experiment().catch(() => null);
+  const study = await publicEvaluation().catch(() => null);
   if (!study) return <main className="shell historical"><div className="eyebrow">Historical study</div>
     <h1>Results unavailable</h1><p className="lede">The archived experiment has not been imported into this Arena database.</p>
   </main>;
 
-  const modelName: Record<string, string> = { humain: "HUMAIN M3", minimax: "MiniMax M3" };
+  const modelName=Object.fromEntries(study.catalog.map(m=>[m.id,m.displayName]));
   const totalGrades = study.models.reduce((sum, model) => sum + model.total, 0);
   const technical = study.models.reduce((sum, model) => sum + model.technical, 0);
   return <main className="shell historical">
     <section className="mast"><div><div className="eyebrow">Najd Research · historical pre-audit study</div>
-      <h1>HUMAIN M3 vs MiniMax M3</h1></div>
+      <h1>{study.title}</h1></div>
       <div className="stat"><strong>{study.caseCount.toLocaleString()}</strong>case IDs in every configuration</div>
     </section>
     <p className="lede">A comparison across {study.configurationCount} configurations and {totalGrades.toLocaleString()} graded outputs. The headline uses all {study.caseCount.toLocaleString()} cases for each configuration, including quarantined cases and technical failures.</p>

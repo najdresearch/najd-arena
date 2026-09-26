@@ -1,0 +1,1 @@
+export default function Loading(){return <main className="shell category-page" aria-busy="true" aria-label="Loading page"><div className="eyebrow">Najd Arena</div><p className="lede" role="status">Loading evaluation results…</p><div className="loading-placeholder"/></main>;}

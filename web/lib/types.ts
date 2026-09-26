@@ -17,6 +17,8 @@ export type PublishedRun = {
 
 export type PrivateRun = PublishedRun & {
   status: string;
+  canRequestPublication?: boolean;
+  publicationRequested?: boolean;
   completedCases: number;
   totalCases: number;
   errors: number;

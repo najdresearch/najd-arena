@@ -8,7 +8,7 @@ export default async function AdminPage() {
   if (!admin) return <main className="shell"><div className="empty">Najd administrator access required.</div></main>;
   const result = await pool.query(`SELECT r.id,r.model_display_name,r.completed_cases,r.total_cases,
     r.coverage,o.name organization FROM runs r JOIN organizations o ON o.id=r.organization_id
-    WHERE r.status='awaiting_review' ORDER BY r.completed_at`);
+    WHERE r.status='awaiting_review' AND r.publication_requested_at IS NOT NULL ORDER BY r.completed_at`);
   const organizations = await pool.query(`SELECT id,name,provider,slug FROM organizations
     WHERE approved=false ORDER BY created_at`);
   return <main className="shell"><section className="mast"><div><div className="eyebrow">Najd operations</div><h1>Review runs.</h1></div></section>

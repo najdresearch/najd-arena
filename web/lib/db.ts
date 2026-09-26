@@ -1,3 +1,4 @@
+import {cache} from "react";
 import { Pool } from "pg";
 import type { PrivateRun, PublishedRun } from "./types";
 
@@ -33,7 +34,7 @@ export async function runById(id: string): Promise<PublishedRun | null> {
 export async function organizationRuns(userId: string): Promise<PrivateRun[]> {
   if (!process.env.DATABASE_URL) return [];
   const result = await pool.query(`
-    SELECT r.*, o.name AS organization FROM runs r
+    SELECT r.*, m.role, o.name AS organization FROM runs r
     JOIN organizations o ON o.id = r.organization_id
     JOIN organization_memberships m ON m.organization_id = o.id
     WHERE m.user_id = $1 ORDER BY r.created_at DESC`, [userId]);
@@ -43,6 +44,7 @@ export async function organizationRuns(userId: string): Promise<PrivateRun[]> {
     caseWeightedScore: Number(row.case_weighted_score ?? 0), coverage: Number(row.coverage ?? 0),
     datasetVersion: row.dataset_version, judgeProfile: row.judge_profile_id ?? "pending",
     publishedAt: row.published_at?.toISOString() ?? "", tracks: row.track_scores ?? [],
+    canRequestPublication: row.role === "admin", publicationRequested: !!row.publication_requested_at,
     status: row.status, completedCases: row.completed_cases, totalCases: row.total_cases,
     errors: row.error_count,
   }));
@@ -57,14 +59,16 @@ export async function organizationsForUser(userId: string) {
     active_run_limit: number; role: string}>;
 }
 
-export type HistoricalBreakdown = {
+export type ResultBreakdown = {
   name: string;
   total: number;
   acceptable: number;
   technical: number;
 };
 
-export type HistoricalExperiment = {
+export type PublicEvaluation = {
+  catalog: CatalogModel[];
+  metrics: Array<{config:string;total:number;medianSeconds?:number;p95Seconds?:number;timedOutputs?:number;[key:string]:unknown}>;
   title: string;
   reportUrl: string;
   datasetRevision: string;
@@ -73,53 +77,24 @@ export type HistoricalExperiment = {
   promptMismatchCount: number;
   expectedMismatchCount: number;
   disclosure: string;
-  models: Array<HistoricalBreakdown & { configurations: number }>;
-  configurations: Array<HistoricalBreakdown & { model: string }>;
-  tracks: Array<HistoricalBreakdown & { model: string }>;
+  models: Array<ResultBreakdown & { configurations: number }>;
+  configurations: Array<ResultBreakdown & { model: string; execution:string;thinking:string }>;
+  configurationTracks: Array<ResultBreakdown & { model: string; config: string }>;
+  tracks: Array<ResultBreakdown & { model: string }>;
 };
 
-export async function historicalM3Experiment(): Promise<HistoricalExperiment | null> {
-  if (!process.env.DATABASE_URL) return null;
-  const id = "humain-m3-vs-minimax-m3-preaudit-20260909";
-  const [experiment, groups] = await Promise.all([
-    pool.query(`SELECT title, related_report_url, published_dataset_revision, case_count,
-      configuration_count, prompt_mismatch_count, expected_mismatch_count, disclosure
-      FROM historical_experiments WHERE id=$1`, [id]),
-    pool.query(`SELECT kind, name, model, COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE label IN ('correct', 'possible_correct'))::int AS acceptable,
-      COUNT(*) FILTER (WHERE grade_status='technical_failure')::int AS technical,
-      COUNT(DISTINCT config_id)::int AS configurations
-      FROM (
-        SELECT 'model' AS kind, split_part(config_id, '--', 1) AS name,
-          split_part(config_id, '--', 1) AS model, config_id, label, grade_status
-        FROM historical_grades WHERE experiment_id=$1
-        UNION ALL
-        SELECT 'configuration', config_id, split_part(config_id, '--', 1), config_id, label, grade_status
-        FROM historical_grades WHERE experiment_id=$1
-        UNION ALL
-        SELECT 'track', category, split_part(config_id, '--', 1), config_id, label, grade_status
-        FROM historical_grades WHERE experiment_id=$1
-      ) grouped GROUP BY kind, name, model ORDER BY kind, name, model`, [id]),
-  ]);
-  if (experiment.rowCount === 0) return null;
-  const row = experiment.rows[0];
-  const format = (item: Record<string, unknown>): HistoricalBreakdown => ({
-    name: String(item.name), total: Number(item.total), acceptable: Number(item.acceptable),
-    technical: Number(item.technical),
-  });
-  return {
-    title: row.title, reportUrl: row.related_report_url,
-    datasetRevision: row.published_dataset_revision, caseCount: row.case_count,
-    configurationCount: row.configuration_count, promptMismatchCount: row.prompt_mismatch_count,
-    expectedMismatchCount: row.expected_mismatch_count, disclosure: row.disclosure,
-    models: groups.rows.filter((item) => item.kind === 'model').map((item) => ({
-      ...format(item), configurations: Number(item.configurations),
-    })),
-    configurations: groups.rows.filter((item) => item.kind === 'configuration').map((item) => ({
-      ...format(item), model: item.model,
-    })),
-    tracks: groups.rows.filter((item) => item.kind === 'track').map((item) => ({
-      ...format(item), model: item.model,
-    })),
-  };
-}
+export type CatalogModel = {id:string;slug:string;displayName:string;providerName:string;logoUrl:string|null;color:string;specifications:Record<string,string>};
+export const publicEvaluation=cache(async function publicEvaluation(): Promise<PublicEvaluation | null> {
+ if(!process.env.DATABASE_URL)return null;
+ const {rows:[release]}=await pool.query(`SELECT * FROM evaluation_releases e WHERE visibility='public' AND EXISTS(SELECT 1 FROM evaluation_results r JOIN model_catalog m ON m.id=r.model_id WHERE r.release_id=e.id AND r.visibility='public' AND m.visibility='public') ORDER BY created_at DESC,id LIMIT 1`);
+ if(!release)return null;
+ const {rows}=await pool.query(`SELECT r.*,m.slug,m.display_name,m.provider_name,m.logo_url,m.color,m.specifications FROM evaluation_results r JOIN model_catalog m ON m.id=r.model_id WHERE r.release_id=$1 AND r.visibility='public' AND m.visibility='public' ORDER BY m.display_name,r.execution,r.thinking`,[release.id]);
+ const catalog:CatalogModel[]=Array.from(new Map(rows.map(r=>[r.model_id,{id:r.model_id,slug:r.slug,displayName:r.display_name,providerName:r.provider_name,logoUrl:r.logo_url,color:r.color,specifications:r.specifications}])).values());
+ const configurations=rows.map(r=>({name:r.id,model:r.model_id,execution:r.execution,thinking:r.thinking,total:r.total,acceptable:r.acceptable,technical:r.technical}));
+ const configurationTracks=rows.flatMap(r=>r.tracks.map((t:ResultBreakdown)=>({...t,config:r.id,model:r.model_id})));
+ const models=catalog.map(m=>{const selected=configurations.filter(r=>r.model===m.id);return {name:m.id,configurations:selected.length,total:selected.reduce((s,r)=>s+r.total,0),acceptable:selected.reduce((s,r)=>s+r.acceptable,0),technical:selected.reduce((s,r)=>s+r.technical,0)};});
+ const tracks:Array<ResultBreakdown & {model:string}>=[];
+ for(const t of configurationTracks){let group=tracks.find(r=>r.model===t.model&&r.name===t.name);if(!group){group={name:t.name,model:t.model,total:0,acceptable:0,technical:0};tracks.push(group);}group.total+=t.total;group.acceptable+=t.acceptable;group.technical+=t.technical;}
+ const meta=release.metadata;
+ return {catalog,metrics:rows.map(r=>({...r.metrics,config:r.id,total:r.total})),title:release.title,reportUrl:meta.related_report_url??'',datasetRevision:release.dataset_revision,caseCount:meta.case_count??0,configurationCount:rows.length,promptMismatchCount:meta.prompt_mismatch_count??0,expectedMismatchCount:meta.expected_mismatch_count??0,disclosure:meta.disclosure??'',models,configurations,configurationTracks,tracks};
+});

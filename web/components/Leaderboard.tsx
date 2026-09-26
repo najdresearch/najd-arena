@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { PublishedRun } from "@/lib/types";
 
 export function Leaderboard({ runs }: { runs: PublishedRun[] }) {
-  if (!runs.length) return <div className="empty"><h3>No published runs yet</h3>
-    <p>Reviewed canonical evaluations will appear here.</p></div>;
+  if (!runs.length) return <div className="empty"><div className="eyebrow">Awaiting canonical results</div><h3>No certified runs published yet</h3>
+    <p>Imported historical results are available above. This separate section is reserved for runs completed under the certified evaluation protocol.</p><Link href="/">Explore available model scores →</Link></div>;
   return <table className="leaderboard"><thead><tr><th>Rank</th><th>Model</th><th>Najd score</th>
     <th>Coverage</th><th>Published</th></tr></thead><tbody>{runs.map(run => <tr key={run.id}>
       <td className="rank">{String(run.rank).padStart(2, "0")}</td>

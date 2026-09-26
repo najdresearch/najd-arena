@@ -44,7 +44,7 @@ Record the deployed commit or image digest, successful migrations, health respon
 ## Cranl handoff — September 26
 
 - Target domain: `najdarena.com`, purchased and managed in Cloudflare.
-- Repository: `najdresearch/najd-arena`, branch `codex/deploy-cranl`.
+- Repository: `najdresearch/najd-arena`, branch `main`.
 - Use root Dockerfile, port 3000; persistent PostgreSQL already exists in Cranl as `najd-arena-db` under the Najd Arena project.
 - Set `DATABASE_URL` to its application connection string, `AUTH_URL=https://najdarena.com`, `AUTH_TRUST_HOST=true`, and a generated `AUTH_SECRET` in Cranl secret environment configuration.
 - First launch: `ARENA_SEED_HISTORICAL=true` runs the verified seed and database catalog import. Verify 28 configurations and 170,492 total outputs; then turn the flag off.
@@ -60,3 +60,16 @@ Record the deployed commit or image digest, successful migrations, health respon
 - Initial import flag has been disabled after successful import; application reloaded.
 - Production login providers and evaluation workers are not configured yet. Do not enable organization run quotas until those integrations are verified.
 - Chrome blocked the temporary CranL hostname with `ERR_BLOCKED_BY_CLIENT`; no browser protection was bypassed. HTTP verification succeeded independently. Custom-domain browser verification succeeded at https://najdarena.com/ after Cloudflare DNS setup.
+
+
+## Continuous deployment from main
+
+GitHub Actions runs Python lint/tests, web lint/tests/build, and both container builds. Only a successful push pipeline on `main` can run the production deployment job. It uses the documented CranL deployment API and checks the completed build and public database health. The `production` environment must contain the `CRANL_API_KEY` secret; never place it in the repository.
+
+CranL source settings must use `main`, build path `/`, root Dockerfile, port 3000. The native GitHub webhook currently returns `401 Invalid signature`; the API workflow avoids depending on that broken integration. Key creation and secure storage are pending owner approval at the time of this change. The API key has account-level permissions because CranL does not expose an application-only scope in its creation form.
+
+References: [CranL deployment API](https://docs.cranl.com/api/applications.html), [API authentication](https://docs.cranl.com/api/authentication.html).
+
+## Mobile verification
+
+The public pages were checked at 320px with no document-wide horizontal overflow. The mobile navigation opens all categories and closes after navigation or Escape. Comparison controls use touch-sized targets; wide tables scroll inside labeled, keyboard-focusable regions. The model charts were also checked at 390px and desktop width. Mobile overrides are centralized in `web/app/responsive.css`.

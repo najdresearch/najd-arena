@@ -1,9 +1,14 @@
 .DS_Store
 .najd-arena/
+.najd-arena-v1/
 .pytest_cache/
 .venv/
+node_modules/
+.next/
+*.tsbuildinfo
+.env
+infra/production.env
 __pycache__/
 *.egg-info/
 dist/
 build/
-

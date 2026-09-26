@@ -1,4 +1,3 @@
-# Cranl requires a root Dockerfile. Keep aligned with infra/Dockerfile.web.
 FROM node:24-alpine AS build
 WORKDIR /app
 RUN corepack enable

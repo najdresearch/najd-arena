@@ -31,7 +31,7 @@ export function RunProgress({ initial }: { initial: PrivateRun }) {
   }
   async function requestPublication(){
     const response=await fetch(`/api/runs/${run.id}/publication`,{method:"POST"});
-    if(response.ok){setRun(current=>({...current,publicationRequested:true}));setMessage("Publication requested. This evaluation remains private until Najd approval.");}
+    if(response.ok){setRun(current=>({...current,publicationRequested:true}));setMessage("Organization approval recorded. This evaluation remains private until a Najd Arena administrator approves it.");}
     else setMessage("Publication request was not accepted. Your result remains private.");
   }
   return <div className="run-row"><div><strong>{run.modelName}</strong>
@@ -39,6 +39,7 @@ export function RunProgress({ initial }: { initial: PrivateRun }) {
     <div className="progress-track" aria-label={`${progress.toFixed(0)}% complete`}><div className="progress-fill" style={{width: `${progress}%`}} /></div>
     {! ["published", "rejected", "cancelled", "failed", "awaiting_review"].includes(run.status) &&
       <button className="chip" type="button" onClick={cancel} disabled={cancelling} style={{marginTop: ".75rem"}}>{cancelling ? "Cancelling…" : "Cancel"}</button>}
-  {run.status==="awaiting_review"&&run.canRequestPublication&&!run.publicationRequested&&<button className="chip" onClick={requestPublication}>Request public publication</button>}
+  {run.status==="awaiting_review"&&run.canRequestPublication&&!run.publicationRequested&&<button className="chip" onClick={requestPublication}>Approve public publication</button>}
+  {run.publicationRequested&&run.status!=="published"&&<p className="meta">Organization approved · Awaiting Najd Arena approval</p>}
   {message && <p role="status" className="notice">{message}</p>}</div><div className="score">{run.score ? (run.score * 100).toFixed(1) : "—"}</div></div>;
 }

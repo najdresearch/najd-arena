@@ -17,7 +17,7 @@ export async function publishedRuns(): Promise<PublishedRun[]> {
       r.najd_score, r.case_weighted_score, r.coverage, r.dataset_version,
       r.judge_profile_id, r.published_at, r.track_scores
     FROM runs r JOIN organizations o ON o.id = r.organization_id
-    WHERE r.status = 'published' ORDER BY r.najd_score DESC, r.published_at ASC`);
+    WHERE r.status = 'published' AND r.publication_requested_by IS NOT NULL AND r.publication_requested_at IS NOT NULL AND r.najd_approved_by IS NOT NULL AND r.najd_approved_at IS NOT NULL AND r.published_at IS NOT NULL ORDER BY r.najd_score DESC, r.published_at ASC`);
   return result.rows.map((row, index) => ({
     id: row.id, rank: index + 1, modelName: row.model_display_name, modelId: row.model_id,
     organization: row.organization, score: Number(row.najd_score),
@@ -78,7 +78,7 @@ export type PublicEvaluation = {
   expectedMismatchCount: number;
   disclosure: string;
   models: Array<ResultBreakdown & { configurations: number }>;
-  configurations: Array<ResultBreakdown & { model: string; execution:string;thinking:string }>;
+  configurations: Array<ResultBreakdown & { model: string; execution:string;thinking:string;publishedAt:string|null }>;
   configurationTracks: Array<ResultBreakdown & { model: string; config: string }>;
   tracks: Array<ResultBreakdown & { model: string }>;
 };
@@ -86,12 +86,12 @@ export type PublicEvaluation = {
 export type CatalogModel = {id:string;slug:string;displayName:string;providerName:string;logoUrl:string|null;color:string;specifications:Record<string,string>};
 export const publicEvaluation=cache(async function publicEvaluation(): Promise<PublicEvaluation | null> {
  if(!process.env.DATABASE_URL)return null;
- const {rows:[release]}=await pool.query(`SELECT * FROM evaluation_releases e WHERE visibility='public' AND EXISTS(SELECT 1 FROM evaluation_results r JOIN model_catalog m ON m.id=r.model_id WHERE r.release_id=e.id AND r.visibility='public' AND m.visibility='public') ORDER BY created_at DESC,id LIMIT 1`);
+ const {rows:[release]}=await pool.query(`SELECT * FROM evaluation_releases e WHERE visibility='public' AND EXISTS(SELECT 1 FROM evaluation_results r JOIN model_catalog m ON m.id=r.model_id WHERE r.release_id=e.id AND r.visibility='public' AND m.visibility='public' AND (r.run_id IS NULL OR EXISTS(SELECT 1 FROM runs approved WHERE approved.id=r.run_id AND approved.status='published' AND approved.publication_requested_by IS NOT NULL AND approved.publication_requested_at IS NOT NULL AND approved.najd_approved_by IS NOT NULL AND approved.najd_approved_at IS NOT NULL AND approved.published_at IS NOT NULL))) ORDER BY created_at DESC,id LIMIT 1`);
  if(!release)return null;
- const {rows}=await pool.query(`SELECT r.*,m.slug,m.display_name,m.provider_name,m.logo_url,m.color,m.specifications FROM evaluation_results r JOIN model_catalog m ON m.id=r.model_id WHERE r.release_id=$1 AND EXISTS(SELECT 1 FROM evaluation_releases e WHERE e.id=r.release_id AND e.visibility='public') AND r.visibility='public' AND m.visibility='public' ORDER BY m.display_name,r.execution,r.thinking`,[release.id]);
+ const {rows}=await pool.query(`SELECT r.*,COALESCE((SELECT published_at FROM runs WHERE id=r.run_id),r.published_at) AS public_date,m.slug,m.display_name,m.provider_name,m.logo_url,m.color,m.specifications FROM evaluation_results r JOIN model_catalog m ON m.id=r.model_id WHERE r.release_id=$1 AND EXISTS(SELECT 1 FROM evaluation_releases e WHERE e.id=r.release_id AND e.visibility='public') AND r.visibility='public' AND m.visibility='public' AND (r.run_id IS NULL OR EXISTS(SELECT 1 FROM runs approved WHERE approved.id=r.run_id AND approved.status='published' AND approved.publication_requested_by IS NOT NULL AND approved.publication_requested_at IS NOT NULL AND approved.najd_approved_by IS NOT NULL AND approved.najd_approved_at IS NOT NULL AND approved.published_at IS NOT NULL)) ORDER BY m.display_name,r.execution,r.thinking`,[release.id]);
  if(!rows.length)return null;
  const catalog:CatalogModel[]=Array.from(new Map(rows.map(r=>[r.model_id,{id:r.model_id,slug:r.slug,displayName:r.display_name,providerName:r.provider_name,logoUrl:r.logo_url,color:r.color,specifications:r.specifications}])).values());
- const configurations=rows.map(r=>({name:r.id,model:r.model_id,execution:r.execution,thinking:r.thinking,total:r.total,acceptable:r.acceptable,technical:r.technical}));
+ const configurations=rows.map(r=>({name:r.id,model:r.model_id,execution:r.execution,thinking:r.thinking,publishedAt:r.public_date?.toISOString()??null,total:r.total,acceptable:r.acceptable,technical:r.technical}));
  const configurationTracks=rows.flatMap(r=>r.tracks.map((t:ResultBreakdown)=>({...t,config:r.id,model:r.model_id})));
  const models=catalog.map(m=>{const selected=configurations.filter(r=>r.model===m.id);return {name:m.id,configurations:selected.length,total:selected.reduce((s,r)=>s+r.total,0),acceptable:selected.reduce((s,r)=>s+r.acceptable,0),technical:selected.reduce((s,r)=>s+r.technical,0)};});
  const tracks:Array<ResultBreakdown & {model:string}>=[];

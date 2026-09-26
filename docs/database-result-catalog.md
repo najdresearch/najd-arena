@@ -48,3 +48,11 @@ The first public deployment is the result catalog. Self-service company executio
 | Commercial operation | Agreed retention/deletion policy, metering, billing, service limits, and operational monitoring |
 
 A higher score alone is not a diagnosis. Recommendations should cite observed failures and propose a measurable intervention, with a follow-up run to test whether it helped.
+
+## Publication approval and date
+
+Publication requires explicit consent by an organization administrator and approval by at least one Najd Arena administrator. Organization consent records `publication_requested_by/at`; Najd approval records `najd_approved_by/at`. The existing request endpoint now represents explicit organization approval. The UI labels that action **Approve public publication**. Najd's final action is **Approve & publish**.
+
+A database constraint blocks new published runs unless both approvals and `published_at` are present. Public queries also exclude unapproved legacy runs and catalog projections linked to unapproved runs. Najd approval, publication, review, and audit writes occur in one transaction. Publication is immediate after the second approval; scheduled publication is not implemented.
+
+The public date is the actual publication timestamp, formatted in the Riyadh time zone. Model comparisons, release rows, and canonical run pages show it. Historical imports with no verified publication timestamp display **Publication date not recorded**. Import dates and evaluation dates must not be substituted.

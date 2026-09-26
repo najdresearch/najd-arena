@@ -18,7 +18,7 @@ export default async function Dashboard() {
     <form action={async () => { "use server"; await signOut({ redirectTo: "/" }); }}><button className="chip" type="submit">Sign out</button></form></div></section>
     <section className="panel-grid"><div className="panel"><div className="eyebrow">New canonical run</div><h2 style={{margin: ".6rem 0 1.5rem"}}>Connect an endpoint</h2>
       <LaunchForm organizations={organizations} /></div><aside className="panel"><div className="eyebrow">Run policy</div>
-      <p className="lede">The token is encrypted and deleted after inference. Only public HTTPS endpoints are accepted. Evaluations stay private. An organization administrator must request publication, then Najd reviews the completed result.</p></aside></section>
+      <p className="lede">The token is encrypted and deleted after inference. Only public HTTPS endpoints are accepted. Evaluations stay private. An organization administrator must approve publication, then at least one Najd Arena admin must approve it. The publication date is recorded when it becomes public.</p></aside></section>
     <section style={{paddingBottom: "5rem"}}><div className="eyebrow">Recent runs</div>{runs.length ? runs.map(run => <RunProgress initial={run} key={run.id} />) : <div className="empty">No runs have been launched for your organizations.</div>}</section>
   </main>;
 }

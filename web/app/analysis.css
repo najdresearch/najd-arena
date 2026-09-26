@@ -159,3 +159,5 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible { 
 .about-contact { display:flex; align-items:center; justify-content:space-between; gap:30px; padding:45px 0; }.about-contact h2 { font-family:"Newsreader Variable",Georgia,serif; font-size:42px; font-weight:450; }.about-contact p { max-width:500px; line-height:1.7; }
 @media(max-width:760px) { .about-hero { padding:30px 0; }.about-hero h1 { font-size:43px; }.about-hero > p { font-size:16px; }.about-mission,.about-measures { grid-template-columns:1fr; gap:22px; }.about-contact { flex-direction:column; align-items:flex-start; }.about-contact h2 { font-size:34px; } }
 .about-page .button,.about-page .profile-jumps .button { color:#fff; text-decoration:none; }
+.publication-dates { display:flex; flex-wrap:wrap; gap:8px 24px; margin-top:18px; color:#59665e; font-size:12px; }
+.publication-date { font-size:12px; color:#59665e; }

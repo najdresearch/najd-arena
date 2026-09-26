@@ -8,9 +8,9 @@ export async function POST(request: Request, { params }: { params: Promise<{id: 
   const client=await pool.connect();
   try {
   await client.query("BEGIN");
-  const result = await client.query(`UPDATE runs SET status='published', published_at=now(), updated_at=now()
-    WHERE id=$1 AND status='awaiting_review' AND publication_requested_at IS NOT NULL AND completed_cases=total_cases AND coverage=1
-    RETURNING id`, [id]);
+  const result = await client.query(`UPDATE runs SET status='published', published_at=now(), najd_approved_by=$2, najd_approved_at=now(), updated_at=now()
+    WHERE id=$1 AND status='awaiting_review' AND publication_requested_at IS NOT NULL AND publication_requested_by IS NOT NULL AND completed_cases=total_cases AND coverage=1
+    RETURNING id, published_at`, [id,admin.id]);
   if (!result.rowCount) { await client.query("ROLLBACK"); return Response.json({ error: "Run is not eligible for publication." }, { status: 409 }); }
   await client.query(`INSERT INTO run_reviews(run_id, reviewer_id, decision, reason)
     VALUES ($1,$2,'published','Canonical run approved by Najd reviewer')`, [id, admin.id]);

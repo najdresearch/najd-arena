@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function Dashboard() {
   const session = await auth();
   if (!session?.user?.id) return <main className="shell"><section className="mast"><div>
-    <div className="eyebrow">Authenticated evaluation</div><h1>Submit a model</h1></div></section><SignInPanel /></main>;
+    <div className="eyebrow">Organization evaluations</div><h1>Evaluate with Najd</h1></div></section><SignInPanel /></main>;
   const [organizations, runs] = await Promise.all([
     organizationsForUser(session.user.id).catch(() => []), organizationRuns(session.user.id).catch(() => []),
   ]);

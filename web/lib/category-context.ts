@@ -2,7 +2,7 @@
 export const categoryPurpose: Record<string, string> = {
   models: "Choose a model for the work your users actually do: answering Arabic questions, following instructions, and handling Saudi context. An overall score is a starting point; task-level results help you judge fit.",
   "coding-agents": "Software teams need working changes, not just plausible code. This category will help assess whether an agent can navigate a repository, choose tools, and complete tasks in products that serve Arabic-speaking users.",
-  image: "Arabic text and right-to-left layouts matter in documents, screenshots, and generated designs. This category will help distinguish visual understanding, readable image generation, and accurate text extraction.",
+  image: "Arabic text and right-to-left layouts matter in invoices, forms, scans, and screenshots. These evaluations will measure visual understanding, accurate text extraction, and document structure.",
   speech: "Voice services must understand how people actually speak and respond intelligibly. Arabic dialects, names, numbers, and mixed Arabic-English speech are important use cases for transcription and voice assistants.",
   video: "Video tools need to preserve meaning across moving images, speech, and captions. Relevant uses include Arabic education, accessible media, and locally appropriate content creation.",
   inference: "A useful answer must also arrive within your time and cost budget. Endpoint measurements help teams choose how to serve a model for interactive assistants, document processing, or high-volume workloads.",
@@ -64,3 +64,5 @@ export const plannedTrackPurpose: Record<string, string> = {
   "Arabic capability": "Track whether improvements reach Arabic workloads, rather than assume they do.",
   "Efficiency trends": "Track whether comparable work becomes faster or less costly at a given quality level.",
 };
+
+export const taskLabel = (name:string) => ({rag:"Retrieval (RAG)",arabic:"Arabic language",saudi:"Saudi knowledge",islamic_qa:"Islamic question answering",islamic:"Islamic knowledge",religious:"Religious context",agentic:"Agent reasoning",agentic_tool_use:"Tool decisions",document:"Document understanding",localDialects:"Local dialects",footballSport:"Football & sports","music&art":"Music & art"}[name] ?? name.replace(/([a-z])([A-Z])/g,"$1 $2").replaceAll("_"," ").replace(/^./,s=>s.toUpperCase()));

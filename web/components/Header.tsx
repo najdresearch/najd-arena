@@ -18,9 +18,9 @@ export function Header() {
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">{open ? <path d="m6 6 12 12M6 18 18 6" /> : <path d="M4 6h16M4 12h16M4 18h16" />}</svg>{open ? "Close" : "Menu"}
     </button>
     <nav id="primary-navigation" aria-label="Primary" data-open={open}>
-      {sections.map(([href, label]) => <Link href={{ pathname: href, query: { ...query, execution: href === "/models" ? "raw" : href === "/coding-agents" ? "pi" : query.execution } }} key={href} onClick={() => setOpen(false)} aria-current={path === href || (href === "/models" && path.startsWith("/models/")) ? "page" : undefined}>{label}</Link>)}
-      <Link className="mobile-submit" href="/dashboard" onClick={() => setOpen(false)}>Submit model<UiIcon name="arrow" /></Link>
+      {sections.map(([href, label]) => <Link href={{ pathname: href, query: { ...query, execution: href === "/models" ? "raw" : href === "/coding-agents" ? "pi" : query.execution } }} key={href} onClick={() => setOpen(false)} aria-current={path === href || (href === "/models" && path.startsWith("/models/")) ? "page" : undefined}>{label}{["/image","/speech"].includes(href)&&<small className="nav-status">In development</small>}</Link>)}
+      <Link className="mobile-submit" href="/request-evaluation" onClick={() => setOpen(false)}>Request evaluation<UiIcon name="arrow" /></Link>
     </nav>
-    <Link href="/dashboard" className="analysis-submit">Submit model<UiIcon name="arrow" /></Link>
+    <Link href="/request-evaluation" className="analysis-submit">Request evaluation<UiIcon name="arrow" /></Link>
   </div></header>;
 }

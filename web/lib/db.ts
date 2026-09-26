@@ -88,7 +88,8 @@ export const publicEvaluation=cache(async function publicEvaluation(): Promise<P
  if(!process.env.DATABASE_URL)return null;
  const {rows:[release]}=await pool.query(`SELECT * FROM evaluation_releases e WHERE visibility='public' AND EXISTS(SELECT 1 FROM evaluation_results r JOIN model_catalog m ON m.id=r.model_id WHERE r.release_id=e.id AND r.visibility='public' AND m.visibility='public') ORDER BY created_at DESC,id LIMIT 1`);
  if(!release)return null;
- const {rows}=await pool.query(`SELECT r.*,m.slug,m.display_name,m.provider_name,m.logo_url,m.color,m.specifications FROM evaluation_results r JOIN model_catalog m ON m.id=r.model_id WHERE r.release_id=$1 AND r.visibility='public' AND m.visibility='public' ORDER BY m.display_name,r.execution,r.thinking`,[release.id]);
+ const {rows}=await pool.query(`SELECT r.*,m.slug,m.display_name,m.provider_name,m.logo_url,m.color,m.specifications FROM evaluation_results r JOIN model_catalog m ON m.id=r.model_id WHERE r.release_id=$1 AND EXISTS(SELECT 1 FROM evaluation_releases e WHERE e.id=r.release_id AND e.visibility='public') AND r.visibility='public' AND m.visibility='public' ORDER BY m.display_name,r.execution,r.thinking`,[release.id]);
+ if(!rows.length)return null;
  const catalog:CatalogModel[]=Array.from(new Map(rows.map(r=>[r.model_id,{id:r.model_id,slug:r.slug,displayName:r.display_name,providerName:r.provider_name,logoUrl:r.logo_url,color:r.color,specifications:r.specifications}])).values());
  const configurations=rows.map(r=>({name:r.id,model:r.model_id,execution:r.execution,thinking:r.thinking,total:r.total,acceptable:r.acceptable,technical:r.technical}));
  const configurationTracks=rows.flatMap(r=>r.tracks.map((t:ResultBreakdown)=>({...t,config:r.id,model:r.model_id})));

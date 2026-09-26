@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<rect width="1200" height="630" fill="#f5f4ec"/>
+<path d="M0 0H1200V9H0Z" fill="#193c2a"/>
+<g transform="translate(64 54) scale(.55)"><rect width="128" height="128" rx="28" fill="#193c2a"/><path d="M28 94V37h15v8c5-7 12-10 20-10 17 0 25 11 25 29v30H72V65c0-11-4-16-12-16-10 0-16 7-16 19v26Z" fill="#f5f4ec"/><circle cx="103" cy="87" r="8" fill="#79b898"/></g>
+<text x="153" y="104" font-family="Helvetica,Arial,sans-serif" font-size="43" letter-spacing="-2" fill="#193c2a"><tspan font-weight="700">najd</tspan>arena<tspan fill="#4c8967">.</tspan></text>
+<text x="65" y="213" font-family="Helvetica,Arial,sans-serif" font-size="16" letter-spacing="3" fill="#466751">INDEPENDENT EVALUATION BY NAJD RESEARCH</text>
+<text x="60" y="308" font-family="Georgia,serif" font-size="78" letter-spacing="-2" fill="#202a23">The benchmark for</text>
+<text x="60" y="402" font-family="Georgia,serif" font-size="78" letter-spacing="-2" fill="#356448">Arabic and Saudi AI.</text>
+<path d="M64 474H1136" stroke="#cbd4c9"/>
+<text x="64" y="536" font-family="Helvetica,Arial,sans-serif" font-size="23" fill="#526458">Language. Local knowledge. Real-world tasks.</text>
+<text x="1136" y="536" text-anchor="end" font-family="Helvetica,Arial,sans-serif" font-size="23" font-weight="700" fill="#193c2a">najdarena.com ↗</text>
+</svg>

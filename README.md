@@ -1,86 +1,62 @@
 # Najd Arena
 
-Najd Arena is a reproducible, evidence-first evaluation engine for models and agents. Arabic and Saudi evaluation are its deepest specialization.
+Najd Arena is the evaluation interface for the certified [Najd Benchmark](https://huggingface.co/datasets/najdresearch/najd-benchmark). It contains two products:
 
-This v0.1 repository contains the local engine and a guarded workflow for publishing approved,
-reproducible artifacts. It does not contain the historical HUMAIN M3 run, restricted datasets,
-a hosted service, or a public leaderboard.
+- `tui/` — a local Textual application, scriptable CLI, evaluation runtime, and reusable worker process.
+- `web/` — a Next.js leaderboard and authenticated organization workspace.
 
-## Quick start
+Shared JSON contracts live in `contracts/`; portable deployment files live in `infra/`. There is no separate application backend: the Next.js app owns HTTP/auth flows and the Python runtime owns queued evaluation work.
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
-najd-arena init
-najd-arena provider add recorded-demo \
-  --plugin recorded \
-  --model recorded-v1 \
-  --responses-file examples/acceptance/responses.json
-najd-arena dataset validate examples/acceptance
-najd-arena run examples/acceptance/experiment.json
-```
-
-Use the returned run ID:
+## Local TUI
 
 ```bash
-najd-arena grade RUN_ID
-najd-arena report RUN_ID
-najd-arena evidence export RUN_ID --output evidence.zip
-najd-arena verify evidence.zip
+cd tui
+uv sync --extra dev
+uv run najd-arena
 ```
 
-For an OpenAI-compatible endpoint, configure only the environment-variable name that contains the secret:
+Headless OpenAI-compatible example:
 
 ```bash
-najd-arena provider add local-model \
-  --plugin openai-compatible \
-  --model example-model \
-  --base-url http://127.0.0.1:8000/v1 \
-  --api-key-env LOCAL_MODEL_API_KEY
+export LOCAL_MODEL_API_KEY=unused
+uv run najd-arena run \
+  --model openai/local-model \
+  --api-base http://127.0.0.1:8000/v1 \
+  --api-key-env LOCAL_MODEL_API_KEY \
+  --sample 20
 ```
 
-Provider credentials are never stored in project configuration, SQLite, logs, or evidence artifacts.
+Use a LiteLLM model string and its standard environment variable for hosted providers. Add `--judge-model` and `--judge-api-key-env` for full hybrid grading. Without a judge, open-ended cases remain ungraded and the report is non-canonical.
 
-## Guarantees
-
-- Versioned schemas validate cases, suites, and experiments before execution.
-- Run inputs are resolved into an immutable manifest and digest.
-- Attempts and grades are append-only evidence.
-- Resume skips successful work. Retry adds attempts without overwriting history.
-- Metrics are routed by task type.
-- Reports use saved artifacts and require no provider access.
-- Evidence bundles detect later modification.
-
-See [the artifact model](docs/artifact-model.md) and [dataset licenses](DATASET_LICENSES.md).
-
-## Public releases
-
-Public suites are stored in `najdresearch/najd-arena`; full run evidence is stored in
-`najdresearch/najd-arena-results`. Preparing a release is offline and never uploads anything.
-It requires a clean Git worktree and a publication approval that validates against
-`schemas/v1/publication.schema.json`.
+## Web and workers
 
 ```bash
-pip install -e '.[publish]'
-najd-arena release prepare-dataset examples/acceptance \
-  --approval examples/acceptance/publication.json \
-  --output dist/acceptance-1.0.0
-najd-arena release publish dist/acceptance-1.0.0
+cp .env.example .env
+# Fill OAuth, credential-encryption, admin, and judge values.
+docker compose -f infra/docker-compose.yml up --build
 ```
 
-The publish receipt contains the immutable dataset commit. Use that full commit SHA to prepare
-a completed, graded run after creating a run-specific approval:
+Generate `ARENA_CREDENTIAL_KEY` as 32 random bytes encoded with URL-safe base64. Target credentials are encrypted for one run and erased after inference. Hosted endpoints must be public HTTPS URLs.
+
+The first upstream organization syncs on GitHub or Hugging Face sign-in. Organizations begin unapproved with zero quota; approve them and set `active_run_limit` and `monthly_run_limit` in PostgreSQL before they can launch runs.
+
+## Scoring
+
+The runtime pins the certified `2026.09.14` release and verifies its checksum. Source-aware adapters cover all 29 certified sources. Structured, tool-use, instruction-following, and survey tasks use deterministic metrics; open-ended tasks use an immutable judge profile. The public Najd score is the macro-average of 21 track means.
+
+Only complete canonical runs enter the review queue. A Najd administrator must publish a run before it appears publicly. Raw model outputs remain private to the organization and Najd reviewers.
+
+## Historical M3 comparison
+
+The separate `/historical/m3` page reads an archived HUMAIN M3 versus MiniMax M3 experiment from PostgreSQL. Its headline includes all 6,089 case IDs in each of 28 configurations, for 170,492 grade records. Correct and possible-correct grades count as acceptable; technical failures stay in the denominator. This is a historical pre-audit study, not a canonical leaderboard run. The archived prompts and expected answers differ from the published Hugging Face release on some case IDs, and the page discloses the counts.
+
+To import it, apply the database migrations and run `tui/scripts/seed_historical_m3.py` with `--snapshot` pointing to the private archived `preaudit-snapshot-20260909T214500Z` directory and `--release` pointing to the locally verified `2026.09.14` Hugging Face release directory. Pass `--write` and `DATABASE_URL` to seed PostgreSQL. The importer checks both release-file hashes, the snapshot hashes, all case IDs, and complete configuration coverage before writing. It stores only grades and audit metadata, not model answers. Run without `--write` to inspect the verification summary.
+
+The current canonical runner intentionally loads the 5,717 certified cases. The 372 quarantined records need source-specific review, repair, or fixtures before an exact-content 6,089-case rerun can be described as a canonical benchmark result.
+
+## Development
 
 ```bash
-najd-arena release prepare-run RUN_ID \
-  --approval path/to/run-publication.json \
-  --dataset-revision FULL_DATASET_COMMIT_SHA \
-  --output dist/RUN_ID
-najd-arena release publish dist/RUN_ID
+cd tui && uv run ruff check . && uv run python -m pytest -q
+cd ../web && pnpm lint && pnpm build
 ```
-
-Authenticate with `hf auth login` or `HF_TOKEN`. Tokens are never accepted as command-line
-arguments. Publishing is idempotent when the remote content is identical and fails if an
-existing suite version or run ID differs. A result release also verifies that its exact input
-digest exists at the pinned dataset commit before uploading.

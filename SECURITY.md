@@ -2,11 +2,8 @@
 
 Report vulnerabilities privately through GitHub Security Advisories for this repository.
 
-Do not place provider credentials in experiment files, provider configuration, logs, run artifacts, or evidence bundles. Provider configuration stores only the environment-variable name that supplies a credential at runtime.
+Do not place provider credentials in configuration, logs, queue payloads, run artifacts, or result bundles. The local TUI stores only the environment-variable name supplying a credential.
 
-Release preparation scans JSON and JSONL for credential-like fields, known token formats, and
-local home-directory paths. This is a backstop, not a substitute for the required named privacy
-review. Run approvals must explicitly confirm that raw prompts, outputs, usage records, and error
-messages are safe to publish.
+Hosted target tokens are encrypted with AES-256-GCM and authenticated with their organization and run identifiers. Workers receive database identifiers, decrypt only while performing inference, and erase the ciphertext when inference finishes. OAuth access tokens are discarded after organization membership synchronization.
 
-Najd Arena v0.1 is a local engine. It does not provide tenant isolation, a hosted credential store, or a safe service for untrusted users.
+Hosted endpoints are restricted to public HTTPS addresses and revalidated by workers. Production deployments must additionally enforce outbound network policy. Raw case outputs remain private to the organization and Najd reviewers; only reviewed aggregate summaries are public.

@@ -7,7 +7,15 @@ node_modules/
 .next/
 *.tsbuildinfo
 .env
+.env.*
+!.env.example
+*.pem
+*.key
 infra/production.env
+.env.*
+!.env.example
+*.pem
+*.key
 __pycache__/
 *.egg-info/
 dist/

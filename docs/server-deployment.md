@@ -1,6 +1,6 @@
 # Arena server deployment
 
-The first server deployment runs the Next.js application with PostgreSQL, Redis, and Caddy HTTPS at `najdarena.com`. The historical study is read from PostgreSQL at `/historical/m3`. This is a Node.js deployment, not a static export.
+The active deployment uses CranL for Next.js and PostgreSQL. The target domain is `najdarena.com`. This is a Node.js deployment, not a static export. The Compose instructions below are an alternative self-hosted setup; the current CranL deployment is recorded at the end.
 
 ## Before deployment
 
@@ -49,5 +49,14 @@ Record the deployed commit or image digest, successful migrations, health respon
 - Set `DATABASE_URL` to its application connection string, `AUTH_URL=https://najdarena.com`, `AUTH_TRUST_HOST=true`, and a generated `AUTH_SECRET` in Cranl secret environment configuration.
 - First launch: `ARENA_SEED_HISTORICAL=true` runs the verified seed and database catalog import. Verify 28 configurations and 170,492 total outputs; then turn the flag off.
 - Public model metadata and metrics are now database-backed. See `database-result-catalog.md` for visibility and Evaluation as a Service milestones.
-- Current blocker: GitHub installation 165102060 is installed for `najdresearch/najd-arena`, but Cranl's Najd Arena workspace lists only the inherited ma7dev connection. Sync succeeds but does not add the organization installation. The app has not been created and DNS has not been changed. Reconcile the existing installation in Cranl before creating the app.
-- Obtain the custom-domain target from the created app; do not guess an A record or CNAME. Verify TLS and live results after adding Cloudflare DNS.
+- GitHub integration repaired by reinstalling CranL with access only to `najdresearch/najd-arena`.
+- Application ID: `03654404-e4e0-4526-8d4f-9432faf62c42`; region Saudi-6 (Riyadh), matching PostgreSQL.
+- Default URL: https://najd-arena-sf9p1r.cranl.net/
+- Deployed code: `fd96d8cc1d6968ae53b06eca7d15f76e2affd045`.
+- Custom domain live: https://najdarena.com/. Cloudflare apex CNAME saved with DNS-only routing; CranL reports SSL Active. HTTPS `/api/health` returns HTTP 200, and the browser renders database-backed model results.
+- Required Cloudflare record: CNAME, name `@`, target `najd-arena-sf9p1r.cranl.net`, DNS only initially. Cloudflare flattens the apex CNAME. Do not use `najdarena` as the record name; that would create a subdomain.
+- Initial container failed because the copied database connection string omitted its password. Reconstructed the internal URL using the existing database credential, saved it in CranL, and redeployed. Do not record credentials here.
+- Verified HTTPS `/api/health` returned HTTP 200 with `{"status":"ok"}`. Homepage and Models, both model profiles, Inference, Coding Agents, Image, About, and Leaderboards returned HTTP 200. Homepage contains HUMAIN M3 67.35% and MiniMax M3 66.12% for the default raw setting.
+- Initial import flag has been disabled after successful import; application reloaded.
+- Production login providers and evaluation workers are not configured yet. Do not enable organization run quotas until those integrations are verified.
+- Chrome blocked the temporary CranL hostname with `ERR_BLOCKED_BY_CLIENT`; no browser protection was bypassed. HTTP verification succeeded independently. Custom-domain browser verification succeeded at https://najdarena.com/ after Cloudflare DNS setup.

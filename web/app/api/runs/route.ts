@@ -48,11 +48,11 @@ export async function POST(request: Request) {
     await client.query("BEGIN");
     await client.query(`INSERT INTO runs
       (id, organization_id, created_by, status, model_display_name, model_id, endpoint_url,
-       concurrency, rpm, tpm, dataset_version, dataset_revision, total_cases)
-      VALUES ($1,$2,$3,'queued',$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+       concurrency, rpm, tpm, dataset_version, dataset_revision, total_cases, evaluation_protocol)
+      VALUES ($1,$2,$3,'queued',$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
       [runId, input.organizationId, session.user.id, input.displayName, input.modelId,
        endpointUrl, input.concurrency, input.rpm, input.tpm,
-       datasetRelease.version, datasetRelease.revision, datasetRelease.caseCount]);
+       datasetRelease.version, datasetRelease.revision, datasetRelease.caseCount, datasetRelease.protocol]);
     await client.query(`INSERT INTO run_credentials
       (run_id, ciphertext, nonce, auth_tag, key_id) VALUES ($1,$2,$3,$4,$5)`,
       [runId, secret.ciphertext, secret.nonce, secret.tag, secret.keyId]);

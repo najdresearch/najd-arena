@@ -79,3 +79,27 @@ def select_cases(
     if not cases:
         raise ValueError("the selected benchmark contains no cases")
     return tuple(cases)
+
+
+def fixture_files(benchmark: Benchmark, case: BenchmarkCase) -> dict[str, str]:
+    """Download only checksum-listed files for this case's pinned fixture."""
+    from najd_benchmark.fixtures import safe_path
+
+    if not case.fixture:
+        return {}
+    safe_path(case.fixture)
+    checks = _json(benchmark.root / "checksums.json")["files"]
+    prefix = f"fixtures/{case.fixture}/"
+    selected = {name: digest for name, digest in checks.items() if name.startswith(prefix)}
+    if not selected:
+        raise ValueError(f"No verified fixture files for {case.id} at {benchmark.revision}")
+    files = {}
+    for name, digest in selected.items():
+        relative = safe_path(name[len(prefix):])
+        path = Path(hf_hub_download(REPO_ID, f"datasets/najd-benchmark/{benchmark.version}/{name}",
+                                   repo_type="dataset", revision=benchmark.revision,
+                                   cache_dir=user_cache_path("najd-arena") / "huggingface"))
+        if _sha256(path) != digest:
+            raise ValueError(f"Fixture checksum mismatch: {name}")
+        files[relative] = path.read_text(encoding="utf-8")
+    return files

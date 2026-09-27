@@ -103,11 +103,19 @@ def _mena(case: BenchmarkCase, output: str) -> float:
     return probabilities.get(selected, 0) / maximum if maximum else 0.0
 
 
-def deterministic_grade(case: BenchmarkCase, output: str) -> dict[str, Any] | None:
+def deterministic_grade(
+    case: BenchmarkCase, output: str, *, fixture_result: dict | None = None
+) -> dict[str, Any] | None:
     if case.fixture:
-        return {"method": "requires-fixture-harness", "score": None, "passed": None}
+        if fixture_result is None:
+            return {"method": "requires-fixture-harness", "score": None, "passed": None}
+        from najd_benchmark.fixtures import artifact_grade
+        return artifact_grade(case.expected, fixture_result)
     if "missing_expected_answer" in case.audit_issues:
         return {"method": "missing-reference-answer", "score": None, "passed": None}
+    if case.provenance.get("correction_version") == "2026.09.27.1":
+        from najd_benchmark.absher_corrections import grade
+        return grade(case.expected, output)
     if case.source_id == "arabicmmlu":
         return grade_arabic_mmlu(case.to_dict(), output)
     mode = adapt(case).mode

@@ -53,3 +53,36 @@ def test_web_and_worker_release_agree():
     assert DATASET_VERSION in source
     assert DATASET_REVISION in source
     assert str(CASE_COUNT) in source
+
+
+def test_fixture_artifacts_must_exist():
+    case = replace(benchmark().cases[0], fixture='contacts',
+                   expected={'file_contains': {'answer.txt': 'Lulwa'}})
+    from najd_benchmark.fixtures import PROTOCOL
+    evidence = {'protocol': PROTOCOL, 'status': 'complete', 'files': {}}
+    assert deterministic_grade(case, 'Lulwa', fixture_result=evidence)['score'] == 0
+    evidence['files']['answer.txt'] = 'Lulwa'
+    assert deterministic_grade(case, 'Lulwa', fixture_result=evidence) is None
+
+
+def test_corrected_keys_are_not_judged_or_guessed():
+    from najd_arena.adapters import adapt
+    case = replace(benchmark().cases[0], expected={'answer': 'ب'},
+                   provenance={'sourceId': 'absher', 'correction_version': '2026.09.27.1'})
+    assert adapt(case).mode == 'exact'
+    assert deterministic_grade(case, 'ب')['score'] == 1
+    assert deterministic_grade(case, 'أ')['score'] == 0
+    assert deterministic_grade(case, 'أ أو ب')['score'] == 0
+
+
+@pytest.mark.asyncio
+async def test_invalid_judge_response_is_an_error():
+    from unittest.mock import AsyncMock
+
+    from najd_arena.engine import _judge
+    from najd_arena.models import ModelConfig
+    from najd_arena.providers import ModelResponse
+    response = ModelResponse('judge', '{"score":2}', [], {})
+    with (patch('najd_arena.engine.LiteLLMProvider.invoke', new=AsyncMock(return_value=response)),
+          pytest.raises(ValueError, match='invalid structured verdict')):
+        await _judge(benchmark().cases[0], 'candidate', ModelConfig('judge', 'test'))

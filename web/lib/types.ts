@@ -10,6 +10,7 @@ export type PublishedRun = {
   caseWeightedScore: number;
   coverage: number;
   datasetVersion: string;
+  evaluationProtocol: string;
   judgeProfile: string;
   publishedAt: string;
   tracks: TrackScore[];

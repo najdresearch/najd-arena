@@ -29,6 +29,8 @@ class AdaptedCase:
 
 def _instruction(case: BenchmarkCase) -> tuple[GradeMode, str]:
     expected = case.expected
+    if case.provenance.get("correction_version") == "2026.09.27.1":
+        return "exact", "Return only the Arabic option key (أ، ب، ج، د), without explanation."
     if case.source_id in TOOL_SOURCES:
         return "tool", (
             "Return only JSON describing the requested tool action. Include the function/tool name, "

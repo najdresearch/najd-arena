@@ -43,4 +43,4 @@ target-version = "py311"
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.uv.sources]
-najd-benchmark = { git = "https://github.com/najdresearch/benchmark.git", rev = "ea065a7e0655e7e9e263703b285f027af2d728ce" }
+najd-benchmark = { git = "https://github.com/najdresearch/benchmark.git", rev = "ae8788967636976303f07a285c9a5b534619b557" }

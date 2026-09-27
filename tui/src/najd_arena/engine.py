@@ -145,11 +145,14 @@ async def run_benchmark(
     attempts = _read_jsonl(run_dir / "attempts.jsonl")
     report = {
         "schema_version": "1", "run_id": run_id,
-        "status": "complete" if all(item["status"] == "ok" for item in attempts) else "incomplete",
+        "status": "complete" if (len(grades) == len(cases)
+            and all(item["status"] == "ok" for item in attempts)
+            and all(item.get("score") is not None for item in grades)) else "incomplete",
         "canonical": bool(manifest["canonical"] and config.judge and len(grades) == len(cases)
                           and all(grade.get("score") is not None for grade in grades)),
         "total_cases": len(cases), "errors": sum(item["status"] == "error" for item in attempts),
         **aggregate(grades),
+        "coverage": sum(g.get("score") is not None for g in grades) / len(cases),
     }
     write_json(run_dir / "report.json", report)
     manifest["status"] = report["status"]

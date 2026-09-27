@@ -34,7 +34,7 @@ class ArenaApp(App[None]):
                 yield Input(placeholder="http://127.0.0.1:11434/v1", id="base")
                 yield Label("API KEY ENVIRONMENT VARIABLE")
                 yield Input(placeholder="OPENAI_API_KEY", id="key-env")
-                yield Label("SAMPLE (blank = full certified suite)")
+                yield Label("SAMPLE (blank = full suite)")
                 yield Input(placeholder="20", id="sample", type="integer")
                 yield Label("JUDGE MODEL (optional)")
                 yield Input(placeholder="openai/judge-model", id="judge-model")
@@ -42,7 +42,7 @@ class ArenaApp(App[None]):
                 yield Input(placeholder="OPENAI_API_KEY", id="judge-key-env")
                 yield Button("Start benchmark", id="run", variant="success")
             with Vertical(id="main"):
-                yield Static("Ready. A full run contains 5,717 certified cases.", id="status")
+                yield Static("Ready. A full run contains 6,089 cases.", id="status")
                 yield ProgressBar(total=100, show_eta=True, id="progress")
                 yield DataTable(id="runs", zebra_stripes=True)
         yield Footer()

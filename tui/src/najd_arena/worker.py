@@ -57,11 +57,18 @@ def _token(connection: psycopg.Connection[Any], run: dict[str, Any]) -> str:
         EncryptedSecret(*row), run_id=str(run["id"]), organization_id=str(run["organization_id"]))
 
 
+def _benchmark_for_run(run: dict[str, Any]):
+    benchmark = fetch_benchmark(version=run["dataset_version"], revision=run["dataset_revision"])
+    if len(benchmark.cases) != run["total_cases"]:
+        raise ValueError("Run case count differs from its pinned dataset")
+    return benchmark
+
+
 def prepare_run(run_id: str) -> None:
-    benchmark = fetch_benchmark()
     queue = _redis()
     with _database() as connection:
         run = _run(connection, run_id)
+        benchmark = _benchmark_for_run(run)
         validate_public_endpoint(run["endpoint_url"])
         connection.execute("UPDATE runs SET status='running_inference',updated_at=now() WHERE id=%s",
                            (run_id,))
@@ -109,7 +116,6 @@ def _concurrency_slot(queue: redis.Redis, run: dict[str, Any]):
 
 
 def evaluate_case(run_id: str, case_id: str) -> None:
-    case = next(case for case in fetch_benchmark().cases if case.id == case_id)
     queue = _redis()
     with _database() as connection:
         existing = connection.execute("SELECT status FROM case_results WHERE run_id=%s AND case_id=%s "
@@ -117,6 +123,7 @@ def evaluate_case(run_id: str, case_id: str) -> None:
         if existing and existing[0] == "complete":
             return
         run = _run(connection, run_id)
+        case = next(case for case in _benchmark_for_run(run).cases if case.id == case_id)
         if run["status"] in {"cancelled", "rejected", "published"}:
             return
         token = _token(connection, run)
@@ -165,7 +172,9 @@ def evaluate_case(run_id: str, case_id: str) -> None:
 
 
 def grade_case(run_id: str, case_id: str) -> None:
-    case = next(case for case in fetch_benchmark().cases if case.id == case_id)
+    with _database() as connection:
+        run = _run(connection, run_id)
+    case = next(case for case in _benchmark_for_run(run).cases if case.id == case_id)
     key = f"runs/{run_id}/outputs/{case_id}.json"
     payload = json.loads(_s3().get_object(Bucket=os.environ["S3_BUCKET"], Key=key)["Body"].read())
     grade = deterministic_grade(case, payload["output"])
@@ -192,20 +201,46 @@ def grade_case(run_id: str, case_id: str) -> None:
             _redis().xadd(STREAMS["orchestration"], {"type": "finalize_run", "run_id": run_id})
 
 
+def summarize_run(benchmark, rows):
+    expected = {case.id: case.track for case in benchmark.cases}
+    seen = set()
+    grouped: dict[str, list[float]] = defaultdict(list)
+    for case_id, track, score in rows:
+        if case_id in seen or case_id not in expected or expected[case_id] != track:
+            raise ValueError("Graded case identity differs from pinned run")
+        seen.add(case_id)
+        if score is not None:
+            value = float(score)
+            if not 0 <= value <= 1:
+                raise ValueError("Invalid grade")
+            grouped[track].append(value)
+    tracks = [{"name": track, "score": sum(values) / len(values), "cases": len(values)}
+              for track, values in sorted(grouped.items())]
+    scored = sum(len(values) for values in grouped.values())
+    coverage = scored / len(expected)
+    complete = coverage == 1 and seen == set(expected)
+    macro = sum(item["score"] for item in tracks) / len(tracks) if complete else None
+    micro = sum(sum(v) for v in grouped.values()) / scored if complete else None
+    return tracks, coverage, macro, micro, complete
+
+
 def finalize_run(run_id: str) -> None:
     with _database() as connection:
-        rows = connection.execute("SELECT track,score FROM case_results WHERE run_id=%s AND stage='grading' "
-                                  "AND status='complete'", (run_id,)).fetchall()
-        grouped: dict[str, list[float]] = defaultdict(list)
-        for track, score in rows:
-            grouped[track].append(float(score))
-        tracks = [{"name": track, "score": sum(values) / len(values), "cases": len(values)}
-                  for track, values in sorted(grouped.items())]
-        macro = sum(item["score"] for item in tracks) / len(tracks)
-        micro = sum(score for values in grouped.values() for score in values) / len(rows)
-        connection.execute("UPDATE runs SET status='awaiting_review',najd_score=%s,case_weighted_score=%s,"
-                           "coverage=1,track_scores=%s,completed_at=now(),updated_at=now() WHERE id=%s",
-                           (macro, micro, json.dumps(tracks), run_id))
+        run = _run(connection, run_id)
+        if run["status"] in {"cancelled", "rejected", "published"}:
+            return
+        benchmark = _benchmark_for_run(run)
+        rows = connection.execute(
+            "SELECT case_id,track,score FROM case_results WHERE run_id=%s AND stage='grading' "
+            "AND status='complete'", (run_id,)
+        ).fetchall()
+        tracks, coverage, macro, micro, complete = summarize_run(benchmark, rows)
+        connection.execute(
+            "UPDATE runs SET status=%s,najd_score=%s,case_weighted_score=%s,coverage=%s,"
+            "track_scores=%s,completed_at=now(),updated_at=now() WHERE id=%s",
+            ("awaiting_review" if complete else "incomplete", macro, micro, coverage,
+             json.dumps(tracks), run_id),
+        )
 
 
 def resume_run(run_id: str) -> None:

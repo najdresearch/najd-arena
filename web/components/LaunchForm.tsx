@@ -36,7 +36,7 @@ export function LaunchForm({ organizations }: { organizations: Organization[] })
     <div className="field"><label htmlFor="concurrency">Concurrency</label><input id="concurrency" name="concurrency" type="number" min="1" max="64" defaultValue="8" /></div>
     <div className="field"><label htmlFor="rpm">Requests / minute</label><input id="rpm" name="rpm" type="number" min="1" defaultValue="60" /></div>
     <div className="field"><label htmlFor="tpm">Tokens / minute</label><input id="tpm" name="tpm" type="number" min="1" defaultValue="100000" /></div>
-    <div className="field"><button className="button" type="submit" disabled={pending}>{pending ? "Submitting…" : "Start 5,717-case run"}</button></div>
+    <div className="field"><button className="button" type="submit" disabled={pending}>{pending ? "Submitting…" : "Start 6,089-case run"}</button></div>
     {status && <div className="notice field full" role="status">{status}</div>}
   </form>;
 }

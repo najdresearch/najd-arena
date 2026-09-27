@@ -16,8 +16,6 @@ class BenchmarkCase:
     tags: tuple[str, ...]
     expected: dict[str, Any]
     provenance: dict[str, Any]
-    review_status: str
-    audit_status: str
     audit_issues: tuple[str, ...]
     fixture: str | None = None
     judge_dimensions: tuple[str, ...] = ()
@@ -30,7 +28,6 @@ class BenchmarkCase:
             id=value["id"], track=value["track"], language=value["language"],
             prompt=value["prompt"], tags=tuple(value.get("tags") or ()),
             expected=value["expected"], provenance=value["provenance"],
-            review_status=value["review_status"], audit_status=value["audit_status"],
             audit_issues=tuple(value.get("audit_issues") or ()), fixture=value.get("fixture"),
             judge_dimensions=tuple(value.get("judge_dimensions") or ()),
             system_prompt=value.get("system_prompt"), dialect=value.get("dialect"),

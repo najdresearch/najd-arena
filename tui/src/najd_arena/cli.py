@@ -27,7 +27,7 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--judge-api-base")
     run.add_argument("--json", action="store_true")
     commands.add_parser("runs", help="List local runs")
-    dataset = commands.add_parser("dataset", help="Fetch and verify the certified benchmark")
+    dataset = commands.add_parser("dataset", help="Fetch and verify the benchmark")
     dataset.add_argument("action", choices=["fetch", "verify"])
     return parser
 

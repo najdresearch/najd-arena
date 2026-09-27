@@ -13,11 +13,11 @@ from najd_arena.models import BenchmarkCase
 
 def case(source: str, expected: dict, *, prompt: str = "question") -> BenchmarkCase:
     return BenchmarkCase("one", "arabic", "ar", prompt, (), expected,
-                         {"sourceId": source}, "not_reviewed", "certified", ())
+                         {"sourceId": source}, ())
 
 
-def test_registry_covers_every_certified_source() -> None:
-    assert len(supported_sources()) == 29
+def test_registry_covers_every_release_source() -> None:
+    assert len(supported_sources()) == 39
 
 
 def test_multiple_choice_adapter_and_grade() -> None:

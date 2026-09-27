@@ -104,6 +104,10 @@ def _mena(case: BenchmarkCase, output: str) -> float:
 
 
 def deterministic_grade(case: BenchmarkCase, output: str) -> dict[str, Any] | None:
+    if case.fixture:
+        return {"method": "requires-fixture-harness", "score": None, "passed": None}
+    if "missing_expected_answer" in case.audit_issues:
+        return {"method": "missing-reference-answer", "score": None, "passed": None}
     if case.source_id == "arabicmmlu":
         return grade_arabic_mmlu(case.to_dict(), output)
     mode = adapt(case).mode

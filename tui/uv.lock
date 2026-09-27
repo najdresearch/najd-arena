@@ -1327,7 +1327,7 @@ requires-dist = [
     { name = "huggingface-hub", specifier = ">=0.30,<2" },
     { name = "jsonschema", specifier = ">=4.23,<5" },
     { name = "litellm", specifier = ">=1.70,<2" },
-    { name = "najd-benchmark", git = "https://github.com/najdresearch/benchmark.git?rev=ea065a7e0655e7e9e263703b285f027af2d728ce" },
+    { name = "najd-benchmark", git = "https://github.com/najdresearch/benchmark.git?rev=ae8788967636976303f07a285c9a5b534619b557" },
     { name = "platformdirs", specifier = ">=4.3,<5" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'worker'", specifier = ">=3.2,<4" },
     { name = "pydantic", specifier = ">=2.10,<3" },
@@ -1343,7 +1343,7 @@ provides-extras = ["worker", "dev"]
 [[package]]
 name = "najd-benchmark"
 version = "0.1.0"
-source = { git = "https://github.com/najdresearch/benchmark.git?rev=ea065a7e0655e7e9e263703b285f027af2d728ce#ea065a7e0655e7e9e263703b285f027af2d728ce" }
+source = { git = "https://github.com/najdresearch/benchmark.git?rev=ae8788967636976303f07a285c9a5b534619b557#ae8788967636976303f07a285c9a5b534619b557" }
 
 [[package]]
 name = "openai"

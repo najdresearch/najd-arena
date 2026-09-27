@@ -1,5 +1,7 @@
 # Najd Arena
 
+[Managed evaluation plan](docs/managed-evaluations.md) · [Contributing](CONTRIBUTING.md)
+
 Najd Arena is the evaluation interface for the certified [Najd Benchmark](https://huggingface.co/datasets/najdresearch/najd-benchmark). It contains two products:
 
 - `tui/` — a local Textual application, scriptable CLI, evaluation runtime, and reusable worker process.

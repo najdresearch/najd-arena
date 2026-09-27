@@ -22,3 +22,11 @@ Use a branch and submit a pull request explaining what changed, why, tests run a
 | Documentation | Copyable commands and an explicit distinction between implemented and planned behavior |
 
 Report data or scoring problems with source/case IDs and a reproducible explanation using public material. Keep proposed corrections separate from immutable historical releases. Report security issues privately using the repository's security policy where available; never post secrets publicly.
+
+## Shared contract consumers
+
+Read [the contract integration guide](docs/shared-contracts.md). Run
+`python3 scripts/check_contracts.py`, `pnpm test`, `pnpm web:lint` and `pnpm web:build`.
+Schemas are pinned copies from benchmark; never change their meaning in Arena alone.
+Private-preview tests must reject unauthenticated access, tampering and oversized uploads.
+A claimed managed origin must never enable publication.

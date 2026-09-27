@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "source_repository": "https://github.com/najdresearch/benchmark",
+  "revision": "3d0adee606d49bb3f0c633d231dc29362bc94b77",
+  "files": [
+    {
+      "local_path": "web/lib/contracts/case.schema.json",
+      "source_path": "src/najd_benchmark/schemas/case.schema.json",
+      "sha256": "c7412737b98c4d8a0c8bdad74a7a0b4890b73564f4229b6915e2990d579c798e"
+    },
+    {
+      "local_path": "web/lib/contracts/dataset-manifest.schema.json",
+      "source_path": "src/najd_benchmark/schemas/dataset-manifest.schema.json",
+      "sha256": "cae7758b91b7e57f3761cdf847c4bda5a859218148399cbb1013e46afab59d0e"
+    },
+    {
+      "local_path": "web/lib/contracts/result-bundle.schema.json",
+      "source_path": "src/najd_benchmark/schemas/result-bundle.schema.json",
+      "sha256": "5086045541634f161d492694ba11169c8faf8770f95f0d5913793a80a3c254f0"
+    },
+    {
+      "local_path": "web/lib/contracts/task-pack.schema.json",
+      "source_path": "src/najd_benchmark/schemas/task-pack.schema.json",
+      "sha256": "79144356ac2548bd27f65268f88b92fbe30dd5ce7d05793e65429236a180f582"
+    }
+  ]
+}

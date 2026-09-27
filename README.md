@@ -90,3 +90,9 @@ The [managed evaluation plan](docs/managed-evaluations.md) distinguishes impleme
 The first private pilot is Najd's Arabic customer-support version comparison. Initial Evaluation-as-a-Service provides private evaluation and failure analysis. Hands-on improvements to client datasets, prompts, harnesses and models are a separate service.
 
 See [database result catalog](docs/database-result-catalog.md), [deployment runbook](docs/server-deployment.md) and [contributing](CONTRIBUTING.md).
+
+## Shared contracts (Step 2)
+
+Najd admins can use `/admin/contract-preview` to inspect private development bundles
+from the benchmark package. This validates the shared format without importing local
+results into Arena's publication workflow. See [integration and contribution checks](docs/shared-contracts.md).

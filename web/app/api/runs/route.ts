@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "redis";
 import { z } from "zod";
 import { auth } from "@/auth";
+import { datasetRelease } from "@/lib/dataset-release";
 import { pool } from "@/lib/db";
 import { encryptCredential, validatePublicEndpoint } from "@/lib/security";
 
@@ -48,10 +49,10 @@ export async function POST(request: Request) {
     await client.query(`INSERT INTO runs
       (id, organization_id, created_by, status, model_display_name, model_id, endpoint_url,
        concurrency, rpm, tpm, dataset_version, dataset_revision, total_cases)
-      VALUES ($1,$2,$3,'queued',$4,$5,$6,$7,$8,$9,'2026.09.14',
-       'cb30c1c9e46c62f691380c3269885cdb8f22f52b',5717)`,
+      VALUES ($1,$2,$3,'queued',$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
       [runId, input.organizationId, session.user.id, input.displayName, input.modelId,
-       endpointUrl, input.concurrency, input.rpm, input.tpm]);
+       endpointUrl, input.concurrency, input.rpm, input.tpm,
+       datasetRelease.version, datasetRelease.revision, datasetRelease.caseCount]);
     await client.query(`INSERT INTO run_credentials
       (run_id, ciphertext, nonce, auth_tag, key_id) VALUES ($1,$2,$3,$4,$5)`,
       [runId, secret.ciphertext, secret.nonce, secret.tag, secret.keyId]);

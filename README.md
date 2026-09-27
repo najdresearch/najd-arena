@@ -44,7 +44,7 @@ The first upstream organization syncs on GitHub or Hugging Face sign-in. Organiz
 
 ## Scoring
 
-The runtime pins the certified `2026.09.14` release and verifies its checksum. Source-aware adapters cover all 29 certified sources. Structured, tool-use, instruction-following, and survey tasks use deterministic metrics; open-ended tasks use an immutable judge profile. The public Najd score is the macro-average of 21 track means.
+The runtime pins the unified `2026.09.27` release: 6,089 cases across 25 tracks. It verifies the case checksum and preserves each run's dataset version/revision. ArabicMMLU scoring comes from the pinned benchmark package. Structured tasks use deterministic metrics; open-ended tasks require a configured judge.
 
 Only complete canonical runs enter the review queue. Organization-submitted publication requires organization-admin consent and at least one Najd-admin approval. Raw model outputs remain private to the organization and Najd reviewers.
 
@@ -54,7 +54,7 @@ The separate `/historical/m3` page reads an archived HUMAIN M3 versus MiniMax M3
 
 To import it, apply the database migrations and run `tui/scripts/seed_historical_m3.py` with `--snapshot` pointing to the private archived `preaudit-snapshot-20260909T214500Z` directory and `--release` pointing to the locally verified `2026.09.14` Hugging Face release directory. Pass `--write` and `DATABASE_URL` to seed PostgreSQL. The importer checks both release-file hashes, the snapshot hashes, all case IDs, and complete configuration coverage before writing. It stores only grades and audit metadata, not model answers. Run without `--write` to inspect the verification summary.
 
-The current canonical runner intentionally loads the 5,717 certified cases. The 372 quarantined records need source-specific review, repair, or fixtures before an exact-content 6,089-case rerun can be described as a canonical benchmark result.
+The runner loads all 6,089 cases. Six fixture-dependent tasks and four cases without reference answers are recorded as ungraded by the current text endpoint runner. They remain in the denominator and prevent full coverage or publication; removing status metadata does not fabricate execution evidence or answers. A fixture-execution harness and reference repairs are separate work.
 
 ## Development
 
@@ -73,7 +73,7 @@ cd ../web && pnpm lint && pnpm build
 
 Current Hugging Face datasets are [Najd Benchmark](https://huggingface.co/datasets/najdresearch/najd-benchmark), [Najd Legacy 31](https://huggingface.co/datasets/najdresearch/najd-legacy-31) and [Arabic Riddles and Questions](https://huggingface.co/datasets/najdresearch/arabic-riddles). The latter two overlap the historical benchmark. Their current versions omit review annotations and retain source attribution.
 
-Arena still pins the historical dataset commit `cb30c1c9e46c62f691380c3269885cdb8f22f52b` and benchmark package commit `ea065a7e0655e7e9e263703b285f027af2d728ce`. This documentation change does not migrate those dependencies, regrade database results, or change production behavior. The benchmark repository's new metadata-only dataset pin is documented there. Upgrade Arena's pins together in a tested runtime migration; do not substitute `main` or assume the latest package is already deployed.
+New runs pin dataset revision `e2dcd2aac116da180835ce9eacc7572bc7cec2f7`. The benchmark package is pinned in `tui/pyproject.toml` and `tui/uv.lock`. Existing runs use their recorded version/revision, and historical import scripts retain their original hashes. Public model results are not regraded by this migration.
 
 ## Managed evaluation roadmap
 

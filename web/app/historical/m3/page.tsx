@@ -25,7 +25,7 @@ export default async function HistoricalM3Page() {
       <h1>{study.title}</h1></div>
       <div className="stat"><strong>{study.caseCount.toLocaleString()}</strong>case IDs in every configuration</div>
     </section>
-    <p className="lede">A comparison across {study.configurationCount} configurations and {totalGrades.toLocaleString()} graded outputs. The headline uses all {study.caseCount.toLocaleString()} cases for each configuration, including quarantined cases and technical failures.</p>
+    <p className="lede">A comparison across {study.configurationCount} configurations and {totalGrades.toLocaleString()} graded outputs. The headline uses all {study.caseCount.toLocaleString()} cases for each configuration, with technical failures included.</p>
     <div className="historical-scores">{study.models.map((model) => <div className="panel historical-score" key={model.name}>
       <div className="eyebrow">{modelName[model.name] ?? model.name}</div>
       <strong>{rate(model.acceptable, model.total)}</strong>

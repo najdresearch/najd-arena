@@ -101,5 +101,8 @@ def supported_sources() -> frozenset[str]:
         "arbml-saudiirony", "commonsense-validation", "dialectal-arabic-mmlu",
         "humain-araifeval", "humain-aramath", "humain-arapro", "humain-aratruthfulqa",
         "inception-arabic-ifeval", "mena-values", "paired-msa-saudi-tool-use",
-        "pico-saudi-v0.01",
+        "pico-saudi-v0.01", "najd-benchmark-v1", "almrsal-general-contest",
+        "almrsal-riddles", "mawdoo3-animals", "mawdoo3-riddles", "mawdoo3-science",
+        "qusama-riddles", "sayidaty-children-riddles", "twinkl-arabic-riddles",
+        "twinkl-islamic-questions",
     })

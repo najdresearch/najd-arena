@@ -8,13 +8,14 @@ from typing import Any
 from huggingface_hub import hf_hub_download
 from jsonschema import Draft202012Validator
 from najd_benchmark.arabic_mmlu import validate_cases as validate_arabic_mmlu_cases
+from najd_benchmark.release import DATASET_REVISION, DATASET_VERSION
 from platformdirs import user_cache_path
 
 from .models import Benchmark, BenchmarkCase
 
 REPO_ID = "najdresearch/najd-benchmark"
-DEFAULT_VERSION = "2026.09.14"
-DEFAULT_REVISION = "cb30c1c9e46c62f691380c3269885cdb8f22f52b"
+DEFAULT_VERSION = DATASET_VERSION
+DEFAULT_REVISION = DATASET_REVISION
 
 
 def _sha256(path: Path) -> str:
@@ -43,7 +44,7 @@ def fetch_benchmark(
     checksums = _json(files["checksums.json"])["files"]
     expected_digest = checksums.get("cases.jsonl") or checksums.get("cases")
     actual_digest = _sha256(files["cases.jsonl"])
-    if expected_digest and actual_digest != expected_digest:
+    if not expected_digest or actual_digest != expected_digest:
         raise ValueError("benchmark cases checksum does not match the release manifest")
     validator = Draft202012Validator(_json(files["case.schema.json"]))
     cases: list[BenchmarkCase] = []
@@ -59,8 +60,6 @@ def fetch_benchmark(
             case = BenchmarkCase.from_dict(value)
             if case.id in seen:
                 raise ValueError(f"duplicate benchmark case id: {case.id}")
-            if case.audit_status != "certified":
-                raise ValueError(f"non-certified case found in certified split: {case.id}")
             seen.add(case.id)
             cases.append(case)
     if len(cases) != manifest["case_count"]:

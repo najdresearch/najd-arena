@@ -44,7 +44,7 @@ The first upstream organization syncs on GitHub or Hugging Face sign-in. Organiz
 
 ## Scoring
 
-The runtime pins the unified `2026.09.27` release: 6,089 cases across 25 tracks. It verifies the case checksum and preserves each run's dataset version/revision. ArabicMMLU scoring comes from the pinned benchmark package. Structured tasks use deterministic metrics; open-ended tasks require a configured judge.
+The runtime pins the unified `2026.09.27.1` release: 6,089 cases across 25 tracks. It verifies the case checksum and preserves each run's dataset version/revision. ArabicMMLU scoring comes from the pinned benchmark package. Structured tasks use deterministic metrics; open-ended tasks require a configured judge.
 
 Only complete canonical runs enter the review queue. Organization-submitted publication requires organization-admin consent and at least one Najd-admin approval. Raw model outputs remain private to the organization and Najd reviewers.
 
@@ -54,7 +54,7 @@ The separate `/historical/m3` page reads an archived HUMAIN M3 versus MiniMax M3
 
 To import it, apply the database migrations and run `tui/scripts/seed_historical_m3.py` with `--snapshot` pointing to the private archived `preaudit-snapshot-20260909T214500Z` directory and `--release` pointing to the locally verified `2026.09.14` Hugging Face release directory. Pass `--write` and `DATABASE_URL` to seed PostgreSQL. The importer checks both release-file hashes, the snapshot hashes, all case IDs, and complete configuration coverage before writing. It stores only grades and audit metadata, not model answers. Run without `--write` to inspect the verification summary.
 
-The runner loads all 6,089 cases. Six fixture-dependent tasks and four cases without reference answers are recorded as ungraded by the current text endpoint runner. They remain in the denominator and prevent full coverage or publication; removing status metadata does not fabricate execution evidence or answers. A fixture-execution harness and reference repairs are separate work.
+The runner loads all 6,089 cases. The six fixture tasks use `fixture-tools-v1`, a bounded virtual filesystem with recorded reads, writes, output artifacts and grounded judging. Four formerly missing answers use documented source-based corrections in release `2026.09.27.1`. These six tasks measure harness-assisted performance, not raw single-turn inference. Infrastructure failures and invalid judge responses remain errors.
 
 ## Development
 
@@ -73,7 +73,7 @@ cd ../web && pnpm lint && pnpm build
 
 Current Hugging Face datasets are [Najd Benchmark](https://huggingface.co/datasets/najdresearch/najd-benchmark), [Najd Legacy 31](https://huggingface.co/datasets/najdresearch/najd-legacy-31) and [Arabic Riddles and Questions](https://huggingface.co/datasets/najdresearch/arabic-riddles). The latter two overlap the historical benchmark. Their current versions omit review annotations and retain source attribution.
 
-New runs pin dataset revision `e2dcd2aac116da180835ce9eacc7572bc7cec2f7`. The benchmark package is pinned in `tui/pyproject.toml` and `tui/uv.lock`. Existing runs use their recorded version/revision, and historical import scripts retain their original hashes. Public model results are not regraded by this migration.
+New runs pin dataset revision `3fa471f6c8ed2ebc37a8b60d40c88170d682b569`. The benchmark package is pinned in `tui/pyproject.toml` and `tui/uv.lock`. Existing runs use their recorded version/revision, and historical import scripts retain their original hashes. Public model results are not regraded by this migration.
 
 ## Managed evaluation roadmap
 

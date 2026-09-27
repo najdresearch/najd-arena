@@ -15,14 +15,14 @@ export async function publishedRuns(): Promise<PublishedRun[]> {
   const result = await pool.query(`
     SELECT r.id, r.model_display_name, r.model_id, o.name AS organization,
       r.najd_score, r.case_weighted_score, r.coverage, r.dataset_version,
-      r.judge_profile_id, r.published_at, r.track_scores
+      r.judge_profile_id, r.published_at, r.track_scores, r.evaluation_protocol
     FROM runs r JOIN organizations o ON o.id = r.organization_id
     WHERE r.status = 'published' AND r.publication_requested_by IS NOT NULL AND r.publication_requested_at IS NOT NULL AND r.najd_approved_by IS NOT NULL AND r.najd_approved_at IS NOT NULL AND r.published_at IS NOT NULL ORDER BY r.najd_score DESC, r.published_at ASC`);
   return result.rows.map((row, index) => ({
     id: row.id, rank: index + 1, modelName: row.model_display_name, modelId: row.model_id,
     organization: row.organization, score: Number(row.najd_score),
     caseWeightedScore: Number(row.case_weighted_score), coverage: Number(row.coverage),
-    datasetVersion: row.dataset_version, judgeProfile: row.judge_profile_id,
+    datasetVersion: row.dataset_version, evaluationProtocol: row.evaluation_protocol, judgeProfile: row.judge_profile_id,
     publishedAt: row.published_at.toISOString(), tracks: row.track_scores ?? [],
   }));
 }
@@ -42,7 +42,7 @@ export async function organizationRuns(userId: string): Promise<PrivateRun[]> {
     id: row.id, rank: 0, modelName: row.model_display_name, modelId: row.model_id,
     organization: row.organization, score: Number(row.najd_score ?? 0),
     caseWeightedScore: Number(row.case_weighted_score ?? 0), coverage: Number(row.coverage ?? 0),
-    datasetVersion: row.dataset_version, judgeProfile: row.judge_profile_id ?? "pending",
+    datasetVersion: row.dataset_version, evaluationProtocol: row.evaluation_protocol, judgeProfile: row.judge_profile_id ?? "pending",
     publishedAt: row.published_at?.toISOString() ?? "", tracks: row.track_scores ?? [],
     canRequestPublication: row.role === "admin", publicationRequested: !!row.publication_requested_at,
     status: row.status, completedCases: row.completed_cases, totalCases: row.total_cases,

@@ -15,7 +15,7 @@ import redis
 from litellm import acompletion
 
 from .adapters import adapt
-from .dataset import fetch_benchmark
+from .dataset import fetch_benchmark, fixture_files
 from .engine import _judge
 from .hosted import CredentialCipher, EncryptedSecret, validate_public_endpoint
 from .metrics import deterministic_grade
@@ -123,27 +123,34 @@ def evaluate_case(run_id: str, case_id: str) -> None:
         if existing and existing[0] == "complete":
             return
         run = _run(connection, run_id)
-        case = next(case for case in _benchmark_for_run(run).cases if case.id == case_id)
+        benchmark = _benchmark_for_run(run)
+        case = next(case for case in benchmark.cases if case.id == case_id)
         if run["status"] in {"cancelled", "rejected", "published"}:
             return
         token = _token(connection, run)
         validate_public_endpoint(run["endpoint_url"])
-        _rate_limit(queue, run)
-
-        async def invoke() -> Any:
-            return await acompletion(model=f"openai/{run['model_id']}", api_base=run["endpoint_url"],
-                                     api_key=token, messages=adapt(case).messages, temperature=0,
-                                     max_tokens=1024, timeout=120)
+        async def invoke(messages) -> dict:
+            _rate_limit(queue, run)
+            with _concurrency_slot(queue, run):
+                response = await acompletion(model=f"openai/{run['model_id']}", api_base=run["endpoint_url"],
+                                             api_key=token, messages=messages, temperature=0,
+                                             max_tokens=1024, timeout=120)
+            usage = response.usage.model_dump() if response.usage else {}
+            minute_key = f"arena:tpm:{run_id}:{int(time.time() // 60)}"
+            queue.incrby(minute_key, int(usage.get("total_tokens", 0)))
+            queue.expire(minute_key, 120)
+            return {"content": response.choices[0].message.content or "",
+                    "model": response.model or run["model_id"], "usage": usage}
 
         try:
-            with _concurrency_slot(queue, run):
-                response = asyncio.run(invoke())
-            message = response.choices[0].message
-            payload = {"output": message.content or "", "model": response.model or run["model_id"],
-                       "usage": response.usage.model_dump() if response.usage else {}}
-            minute_key = f"arena:tpm:{run_id}:{int(time.time() // 60)}"
-            queue.incrby(minute_key, int(payload["usage"].get("total_tokens", 0)))
-            queue.expire(minute_key, 120)
+            if case.fixture:
+                from najd_benchmark.fixtures import run_fixture
+                payload = asyncio.run(run_fixture(case.prompt, fixture_files(benchmark, case),
+                                                  invoke, system_prompt=case.system_prompt))
+            else:
+                result = asyncio.run(invoke(adapt(case).messages))
+                payload = {"output": result["content"], "model": result["model"],
+                           "usage": result["usage"]}
             key = f"runs/{run_id}/outputs/{case_id}.json"
             _s3().put_object(Bucket=os.environ["S3_BUCKET"], Key=key,
                              Body=json.dumps(payload, ensure_ascii=False).encode(),
@@ -174,22 +181,32 @@ def evaluate_case(run_id: str, case_id: str) -> None:
 def grade_case(run_id: str, case_id: str) -> None:
     with _database() as connection:
         run = _run(connection, run_id)
-    case = next(case for case in _benchmark_for_run(run).cases if case.id == case_id)
+    benchmark = _benchmark_for_run(run)
+    case = next(case for case in benchmark.cases if case.id == case_id)
     key = f"runs/{run_id}/outputs/{case_id}.json"
     payload = json.loads(_s3().get_object(Bucket=os.environ["S3_BUCKET"], Key=key)["Body"].read())
-    grade = deterministic_grade(case, payload["output"])
+    grade = deterministic_grade(case, payload["output"],
+                                fixture_result=payload if case.fixture else None)
     if grade is None:
         config = ModelConfig("najd-judge", os.environ["NAJD_JUDGE_MODEL"],
                              os.getenv("NAJD_JUDGE_API_BASE"), "NAJD_JUDGE_API_KEY", 0, 512)
-        grade = asyncio.run(_judge(case, payload["output"], config))
+        grade = asyncio.run(_judge(case, payload["output"], config,
+                                   evidence=({"source_files": fixture_files(benchmark, case),
+                                              "execution": payload} if case.fixture else None)))
+    grade_key = f"runs/{run_id}/grades/{case_id}.json"
+    _s3().put_object(Bucket=os.environ["S3_BUCKET"], Key=grade_key,
+                     Body=json.dumps({"case_id": case_id, "dataset_revision": benchmark.revision,
+                                      "grade": grade}, ensure_ascii=False).encode(),
+                     ContentType="application/json")
     with _database() as connection:
         if _run(connection, run_id)["status"] == "cancelled":
             return
-        connection.execute("INSERT INTO case_results(run_id,case_id,track,source_id,stage,status,score,method) "
-                           "VALUES (%s,%s,%s,%s,'grading','complete',%s,%s) ON CONFLICT "
+        connection.execute("INSERT INTO case_results "
+                           "(run_id,case_id,track,source_id,stage,status,score,method,artifact_key) "
+                           "VALUES (%s,%s,%s,%s,'grading','complete',%s,%s,%s) ON CONFLICT "
                            "(run_id,case_id,stage,attempt) DO UPDATE SET status='complete',score=excluded.score,"
-                           "method=excluded.method,updated_at=now()",
-                           (run_id, case_id, case.track, case.source_id, grade["score"], grade["method"]))
+                           "method=excluded.method,artifact_key=excluded.artifact_key,updated_at=now()",
+                           (run_id, case_id, case.track, case.source_id, grade["score"], grade["method"], grade_key))
         count = connection.execute("SELECT count(*) FROM case_results WHERE run_id=%s AND stage='grading' "
                                    "AND status='complete'", (run_id,)).fetchone()[0]
         run = _run(connection, run_id)

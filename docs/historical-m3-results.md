@@ -19,7 +19,7 @@ The [earlier PDF report](https://drive.google.com/file/d/1sxxj3zvP82EGQzcmmki_dS
 
 The Arena importer at `tui/scripts/seed_historical_m3.py` verifies the archived grade and evidence hashes, the pinned release-file hashes, all 6,089 case IDs, and 28 complete configurations before writing grades to PostgreSQL. The Arena page at `/historical/m3` calculates the scores from those imported rows. The private archived input directory and model answers are not published.
 
-The current runner loads the unified 6,089-case release. Fixture-dependent cases and missing references remain explicitly ungraded until the required harness/reference support exists. Historical scores remain attached to their original content and protocol.
+The current runner loads the unified 6,089-case release. Release 2026.09.27.1 adds fixture execution and four source-based reference corrections; the new protocol requires fresh evaluations. Historical scores remain attached to their original content and protocol.
 
 ## Additional metrics recovered on 26 September 2026
 

@@ -56,3 +56,7 @@ Publication requires explicit consent by an organization administrator and appro
 A database constraint blocks new published runs unless both approvals and `published_at` are present. Public queries also exclude unapproved legacy runs and catalog projections linked to unapproved runs. Najd approval, publication, review, and audit writes occur in one transaction. Publication is immediate after the second approval; scheduled publication is not implemented.
 
 The public date is the actual publication timestamp, formatted in the Riyadh time zone. Model comparisons, release rows, and canonical run pages show it. Historical imports with no verified publication timestamp display **Publication date not recorded**. Import dates and evaluation dates must not be substituted.
+
+## Planned policy extension
+
+The current dual-approval flow above applies to organization submissions. The [managed evaluation plan](managed-evaluations.md) adds an explicitly labeled independent Najd evaluation path and approvals bound to exact result hashes. These remain implementation targets; historical imports do not become managed-run evidence. Public dataset review annotations have been removed upstream, but the deployed historical catalog and pinned runtime are not migrated by these documentation changes.

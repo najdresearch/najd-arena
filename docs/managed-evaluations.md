@@ -2,7 +2,7 @@
 
 Arena lets an approved organization evaluate a model privately, understand its failures, and choose whether to publish. The first pilot is Najd's own Arabic customer-support version comparison. Hands-on changes to client datasets, prompts, harnesses or models are a separate service.
 
-This is an implementation target, not a statement that the subdomains or controls below are live. The authoritative execution and result boundary is [benchmark contract v2](https://github.com/najdresearch/benchmark/blob/codex/evaluation-contract/docs/evaluation-contract-v2.md).
+This is an implementation target, not a statement that the subdomains or controls below are live. The authoritative execution and result boundary is [benchmark contract v2](https://github.com/najdresearch/benchmark/blob/main/docs/evaluation-contract-v2.md).
 
 ## Product surfaces
 

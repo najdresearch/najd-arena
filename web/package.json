@@ -14,12 +14,15 @@
     "@auth/pg-adapter": "^1.11.1",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@fontsource-variable/newsreader": "^5.2.8",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "json-canonicalize": "^3.0.1",
     "next": "^16.0.0",
     "next-auth": "^5.0.0-beta.29",
     "pg": "^8.16.0",
-    "redis": "^5.8.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "redis": "^5.8.0",
     "zod": "^4.1.0"
   },
   "devDependencies": {
